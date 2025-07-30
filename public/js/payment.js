@@ -735,6 +735,7 @@ class PaymentHandler {
             quantity: this.quantity,
             customerEmail,
             customerName,
+            customerPhone: '', // Not collected in form, use empty string
             orderNotes,
             shippingAddress,
             shippingMethod: this.shippingMethod,
