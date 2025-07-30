@@ -358,7 +358,7 @@ app.get('/api/products', optionalAuth, (req, res) => {
 app.get('/api/sub-products/:productId', (req, res) => {
   const { productId } = req.params;
   
-  db.all('SELECT * FROM sub_products WHERE parent_product_id = ? ORDER BY size_oz', [productId], (err, subProducts) => {
+  db.all('SELECT * FROM sub_products WHERE product_id = ? ORDER BY size_oz', [productId], (err, subProducts) => {
     if (err) return res.status(500).json({ error: 'Database error' });
     res.json({ subProducts });
   });
