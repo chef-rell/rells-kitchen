@@ -965,4 +965,5 @@ app.listen(PORT, () => {
   console.log(`🏝️  Rell's Kitchen server running on port ${PORT}`);
   console.log(`🌴  Caribbean-Cyberpunk fusion cuisine awaits...`);
   console.log(`📁  Static files served from: ${path.join(__dirname, 'public')}`);
+  console.log(`🚀  Deployment successful at ${new Date().toISOString()}`);
 });
