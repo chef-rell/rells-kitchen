@@ -189,14 +189,7 @@ db.serialize(() => {
     }
   });
 
-  // Add user_id column to orders table for better order tracking
-  db.run(`ALTER TABLE orders ADD COLUMN user_id TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding user_id column to orders:', err);
-    } else if (!err) {
-      console.log('Successfully added user_id column to orders table');
-    }
-  });
+  // Note: user_id column is now included directly in orders table CREATE statement
 
   // Initialize products and sub-products if they don't exist
   db.get('SELECT COUNT(*) as count FROM products', (err, row) => {
