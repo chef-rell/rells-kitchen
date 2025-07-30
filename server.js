@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const { initializeDatabase } = require('./init-database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -181,6 +182,16 @@ db.serialize(() => {
   db.run(`ALTER TABLE orders ADD COLUMN user_id TEXT`, (err) => {
     if (err && !err.message.includes('duplicate column name')) {
       console.error('Error adding user_id column to orders:', err);
+    }
+  });
+
+  // Initialize products and sub-products if they don't exist
+  db.get('SELECT COUNT(*) as count FROM products', (err, row) => {
+    if (!err && row.count === 0) {
+      console.log('Initializing database with products...');
+      setTimeout(() => {
+        initializeDatabase();
+      }, 1000);
     }
   });
 
