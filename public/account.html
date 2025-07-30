@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - Rell's Kitchen</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.paypal.com/sdk/js?client-id=Aa3tU4sa9CC4oyeTVExQJh3cdcPQc6mtyjjrrXZSaXZHk21K6eMy_3AUlcTxJh9XJsHA1_e9UoilQGp_&vault=true&intent=subscription" data-sdk-integration-source="button-factory"></script>
+</head>
+<body>
+    <div class="cyber-grid"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1 class="brand-title">RELL'S <span class="usvi-accent">KITCHEN</span></h1>
+                <p class="brand-subtitle">Caribbean • Cyberpunk • Fusion</p>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">← Back to Menu</a>
+                <button id="auth-btn" class="auth-btn">Login</button>
+            </div>
+        </div>
+    </nav>
+
+    <section class="menu-section">
+        <video class="menu-background-video" autoplay muted>
+            <source src="/images/palm-trees-and-futuristic-neon-lit-cabanas-glow-on-a-tropical-beach_preview.mp4" type="video/mp4">
+        </video>
+        <div class="container">
+            <div id="account-content" style="display: none;">
+                <h2 class="section-title">My <span class="usvi-accent">Account</span></h2>
+                
+                <div class="account-tabs">
+                    <button class="tab-btn active" data-tab="profile">Profile</button>
+                    <button class="tab-btn" data-tab="orders">Order History</button>
+                    <button class="tab-btn" data-tab="subscription">Subscription</button>
+                </div>
+
+                <div class="tab-content">
+                    <!-- Profile Tab -->
+                    <div id="profile-tab" class="tab-panel active">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <h3 class="product-name">PROFILE INFORMATION</h3>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <form id="profile-form">
+                                    <div class="form-row">
+                                        <div class="input-group">
+                                            <input type="text" id="first-name" placeholder="First Name" required>
+                                            <label>First Name</label>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="text" id="last-name" placeholder="Last Name" required>
+                                            <label>Last Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="input-group">
+                                            <input type="email" id="email" placeholder="Email" readonly>
+                                            <label>Email</label>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="tel" id="phone" placeholder="Phone Number">
+                                            <label>Phone Number</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="input-group full-width">
+                                            <input type="text" id="address-street" placeholder="Street Address">
+                                            <label>Street Address</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="input-group">
+                                            <input type="text" id="address-city" placeholder="City">
+                                            <label>City</label>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="text" id="address-state" placeholder="State">
+                                            <label>State</label>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="text" id="address-zip" placeholder="ZIP Code">
+                                            <label>ZIP Code</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="input-group">
+                                            <select id="birth-month" class="size-dropdown">
+                                                <option value="">Select Birth Month (Optional)</option>
+                                                <option value="January">January</option>
+                                                <option value="February">February</option>
+                                                <option value="March">March</option>
+                                                <option value="April">April</option>
+                                                <option value="May">May</option>
+                                                <option value="June">June</option>
+                                                <option value="July">July</option>
+                                                <option value="August">August</option>
+                                                <option value="September">September</option>
+                                                <option value="October">October</option>
+                                                <option value="November">November</option>
+                                                <option value="December">December</option>
+                                            </select>
+                                            <label>Birth Month</label>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="submit-btn">Update Profile</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Orders Tab -->
+                    <div id="orders-tab" class="tab-panel">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <h3 class="product-name">ORDER HISTORY</h3>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <div id="orders-list">
+                                    <div class="loading">Loading orders...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Tab -->
+                    <div id="subscription-tab" class="tab-panel">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <h3 class="product-name">SUPPORTER PLAN ($4.99 per month)</h3>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <div id="subscription-info">
+                                    <div class="subscription-benefits">
+                                        <h3>Supporter Plan Benefits</h3>
+                                        <ul class="benefits-list">
+                                            <li>💰 10% discount on all purchases site-wide</li>
+                                            <li>⚡ Early access to new releases</li>
+                                            <li>📱 Exclusive supporter updates</li>
+                                        </ul>
+                                        <p class="requirements-note">
+                                            * Benefits activate immediately upon subscription. Cancel anytime. 
+                                        </p>
+                                    </div>
+                                    
+                                    <div id="subscription-status">
+                                        <!-- Dynamic content based on subscription status -->
+                                    </div>
+                                    
+                                    <div id="subscription-actions">
+                                        <!-- PayPal subscription buttons or cancel option -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Login Required Message -->
+            <div id="login-required" class="cyber-card" style="text-align: center;">
+                <div class="card-header">MEMBER ACCESS REQUIRED</div>
+                <div class="card-content">
+                    <h3>Please log in to access your account</h3>
+                    <p>You need to be logged in as a registered member to view your account information.</p>
+                    <button id="login-prompt-btn" class="submit-btn">Login / Register</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>RELL'S KITCHEN</h3>
+                    <p>Neo-Caribbean Fusion • Est. 2157</p>
+                </div>
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h4>Contact</h4>
+                        <div class="about-description">🕒 Mon-Fri: 10AM-3PM CST<br>📞 (501) 760-9490<br>✉️ sales@rellskitchen.com</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2157 Rell's Kitchen. All rights reserved. | Powered by Kaiel™</p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <h3 id="modal-title">Access Terminal</h3>
+                <div class="modal-tabs">
+                    <button class="tab-btn active" data-tab="login">LOGIN</button>
+                    <button class="tab-btn" data-tab="register">REGISTER</button>
+                </div>
+            </div>
+            
+            <div class="auth-forms">
+                <form id="login-form" class="form-content active">
+                    <div class="input-group">
+                        <input type="text" id="login-username" placeholder="Username" required>
+                        <label>Username</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <label>Password</label>
+                    </div>
+                    <button type="submit" class="submit-btn">CONNECT</button>
+                </form>
+                
+                <form id="register-form" class="form-content">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <input type="text" id="register-first-name" placeholder="First Name" required>
+                            <label>First Name</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="register-last-name" placeholder="Last Name" required>
+                            <label>Last Name</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="register-username" placeholder="Username" required>
+                        <label>Username</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="email" id="register-email" placeholder="Email" required>
+                        <label>Email</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="tel" id="register-phone" placeholder="Phone Number">
+                        <label>Phone Number</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="register-address-street" placeholder="Street Address">
+                        <label>Street Address</label>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <input type="text" id="register-address-city" placeholder="City">
+                            <label>City</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="register-address-state" placeholder="State">
+                            <label>State</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="register-address-zip" placeholder="ZIP Code">
+                            <label>ZIP Code</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <select id="register-birth-month" class="size-dropdown">
+                            <option value="">Select Birth Month (Optional)</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                        <label>Birth Month (Optional)</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="register-password" placeholder="Password" required>
+                        <label>Password (min 6 characters)</label>
+                    </div>
+                    <button type="submit" class="submit-btn">INITIALIZE</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/account.js"></script>
+</body>
+</html>

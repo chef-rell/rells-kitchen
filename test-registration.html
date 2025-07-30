@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Test</title>
+</head>
+<body>
+    <h1>Registration Test</h1>
+    <form id="test-form">
+        <input type="text" id="username" placeholder="Username" required><br><br>
+        <input type="email" id="email" placeholder="Email" required><br><br>
+        <input type="password" id="password" placeholder="Password" required><br><br>
+        <input type="text" id="firstName" placeholder="First Name" required><br><br>
+        <input type="text" id="lastName" placeholder="Last Name" required><br><br>
+        <input type="tel" id="phone" placeholder="Phone"><br><br>
+        <input type="text" id="addressStreet" placeholder="Street"><br><br>
+        <input type="text" id="addressCity" placeholder="City"><br><br>
+        <input type="text" id="addressState" placeholder="State"><br><br>
+        <input type="text" id="addressZip" placeholder="ZIP"><br><br>
+        <select id="birthMonth">
+            <option value="">Select Month</option>
+            <option value="January">January</option>
+            <option value="February">February</option>
+            <option value="March">March</option>
+        </select><br><br>
+        <button type="submit">Test Register</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('test-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Form submitted');
+            
+            const formData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                phone: document.getElementById('phone').value,
+                addressStreet: document.getElementById('addressStreet').value,
+                addressCity: document.getElementById('addressCity').value,
+                addressState: document.getElementById('addressState').value,
+                addressZip: document.getElementById('addressZip').value,
+                birthMonth: document.getElementById('birthMonth').value
+            };
+            
+            console.log('Sending data:', formData);
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                console.log('Response:', result);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>Result:</h3>
+                    <p>Status: ${response.status}</p>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

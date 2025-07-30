@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Rell's Kitchen</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.paypal.com/sdk/js?client-id=Af81MA0ZWntHDhW8onLkfbM6gJN-f7Sw-vrLxOL2iYYL-li72xmT_yQkOMHGeC5AVPF0uo64h5w7NFPd&currency=USD"></script>
+</head>
+<body>
+    <div class="cyber-grid"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1 class="brand-title">RELL'S <span class="usvi-accent">KITCHEN</span></h1>
+                <p class="brand-subtitle">Caribbean • Cyberpunk • Fusion</p>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">← Back to Menu</a>
+                <button id="auth-btn" class="auth-btn">Login</button>
+            </div>
+        </div>
+    </nav>
+
+    <section class="menu-section">
+        <video class="menu-background-video" autoplay muted>
+            <source src="/images/palm-trees-and-futuristic-neon-lit-cabanas-glow-on-a-tropical-beach_preview.mp4" type="video/mp4">
+        </video>
+        <div class="container">
+            <h2 class="section-title">Complete Your <span class="usvi-accent">Order</span></h2>
+            <div class="menu-grid">
+                <div class="product-card">
+                    <div class="product-header">
+                        <h3 class="product-name">ORDER SUMMARY</h3>
+                    </div>
+                    <div class="card-content" style="padding: 25px;">
+                        <div class="product-details">
+                            <img id="product-image" src="" alt="" class="product-image">
+                            <div class="product-info">
+                                <h3 id="product-name"></h3>
+                                <p id="product-description"></p>
+                            </div>
+                        </div>
+                        
+                        <div id="user-status-section" class="user-status-section" style="display: none;">
+                            <div class="status-card">
+                                <div id="user-welcome" class="user-welcome"></div>
+                                <div id="subscriber-status" class="subscriber-status"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="size-selector">
+                            <label for="size-select">Size:</label>
+                            <select id="size-select" class="size-dropdown">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                            <div class="inventory-status">
+                                <span id="inventory-count"></span> available
+                            </div>
+                        </div>
+                        
+                        <div class="quantity-selector">
+                            <label for="quantity">Quantity:</label>
+                            <div class="quantity-controls">
+                                <button type="button" id="decrease-qty">-</button>
+                                <input type="number" id="quantity" min="1" max="3" value="1">
+                                <button type="button" id="increase-qty">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="shipping-options">
+                            <label for="shipping-method">Shipping Method:</label>
+                            <select id="shipping-method" class="size-dropdown">
+                                <option value="pickup" data-cost="0">UPS or USPS Post Office (Hold For Pickup)- FREE</option>
+                                <option value="local-driver" data-cost="10.00">Local Delivery Driver (2-6 business hours) - $10.00</option>
+                                <option value="usps-ground" data-cost="9.95" selected>Ground Advantage (2-5 business days) - $9.95</option>
+                                <option value="usps-priority" data-cost="18.50">Priority Mail (1-3 business days) - $18.50</option>
+                                <option value="usps-express" data-cost="49.95">Priority Express (1-2 business days) - $49.95</option>
+                            </select>
+                            <div class="shipping-note" style="margin-top: 8px; padding: 10px; background: rgba(0, 245, 255, 0.1); border-radius: 5px; font-size: 0.85em; color: var(--text-light);">
+                                <strong>📍 Post Office:</strong> If 'Hold For Pickup' is selected your order will be held for 10 days at a local USPS or UPS office in Jacksonville AR or North Little Rock AR. Please review your shipping confirmation for details.<br>
+                                <br>
+                                <strong>🚗 Local Driver Delivery:</strong> Available only in North Little Rock and Jacksonville AR areas within 15 minutes from Sherwood.
+                            </div>
+                        </div>
+                        
+                        <div class="coupon-section">
+                            <label for="coupon-code">Coupon Code:</label>
+                            <div class="coupon-input-group">
+                                <input type="text" id="coupon-code" placeholder="Enter coupon code" class="size-dropdown">
+                                <button type="button" id="apply-coupon" class="apply-coupon-btn">Apply</button>
+                            </div>
+                            <div id="coupon-status" class="coupon-status"></div>
+                        </div>
+                        
+                        <div class="price-breakdown">
+                            <div class="price-line">
+                                <span>Unit Price:</span>
+                                <span id="unit-price"></span>
+                            </div>
+                            <div class="price-line">
+                                <span>Quantity:</span>
+                                <span id="display-quantity">1</span>
+                            </div>
+                            <div class="price-line">
+                                <span>Subtotal:</span>
+                                <span id="subtotal-price"></span>
+                            </div>
+                            <div class="price-line">
+                                <span>Shipping:</span>
+                                <span id="shipping-cost">FREE</span>
+                            </div>
+                            <div class="price-line" id="subscriber-discount-line" style="display: none;">
+                                <span>Subscriber Discount (10%):</span>
+                                <span id="subscriber-discount">-$0.00</span>
+                            </div>
+                            <div class="price-line" id="coupon-discount-line" style="display: none;">
+                                <span>Coupon Discount:</span>
+                                <span id="coupon-discount">-$0.00</span>
+                            </div>
+                            <div class="price-line total">
+                                <span>Total:</span>
+                                <span id="total-price"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-header">
+                        <h3 class="product-name">PAYMENT METHOD</h3>
+                    </div>
+                    <div class="card-content" style="padding: 25px;">
+                        <div class="customer-info">
+                            <div class="input-group">
+                                <input type="email" id="customer-email" placeholder="Email Address" required>
+                                <label>Email Address *</label>
+                            </div>
+                        </div>
+                        
+                        <div class="order-notes-section">
+                            <div class="input-group">
+                                <textarea id="order-notes" placeholder="Special instructions (optional)" rows="3"></textarea>
+                                <label>Order Notes (Optional)</label>
+                            </div>
+                        </div>
+                        
+                        <div class="subscriber-notice" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan); border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                            <h4 style="color: var(--neon-cyan); margin: 0 0 10px 0; font-family: 'Orbitron', monospace;">💰 Supporter Benefits</h4>
+                            <p style="color: var(--text-light); margin: 0; font-size: 0.9em;">Members who <a href="/account" style="color: var(--neon-cyan); text-decoration: none; font-weight: bold;">subscribe</a> (for $4.99) get a <strong>10% discount.</strong></p>
+                        </div>
+
+                        <div class="paypal-container">
+                            <div id="paypal-button-container"></div>
+                        </div>
+                        
+                        <div class="payment-info">
+                            <p class="cyber-text">🔒 Secure payment powered by PayPal</p>
+                            <p class="cyber-text" id="delivery-info">📱 Shipping address will be collected by PayPal</p>
+                            <p class="cyber-text">📧 Confirmation will be sent to your email</p>
+                            <p class="cyber-text">📦 Tracking information will be provided for shipped orders</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>RELL'S KITCHEN</h3>
+                    <p>Neo-Caribbean Fusion • Est. 2157</p>
+                </div>
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h4>Contact</h4>
+                        <div class="about-description">🕒 Mon-Fri: 10AM-3PM CST<br>📞 (501) 760-9490<br>✉️ sales@rellskitchen.com</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2157 Rell's Kitchen. All rights reserved. | Powered by Kaiel™</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/payment.js"></script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rell's Kitchen - Neo-Caribbean Fusion</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="cyber-grid"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1 class="brand-title">RELL'S <span class="usvi-accent">KITCHEN</span></h1>
+                <p class="brand-subtitle">Caribbean • Cyberpunk • Fusion</p>
+            </div>
+            <div class="nav-links">
+                <a href="#menu" class="nav-link">Menu</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="/account" class="nav-link">My Account</a>
+                <!-- <a href="/cookbook" class="nav-link cookbook-link">Cookbook</a> -->
+                <button id="auth-btn" class="auth-btn">Login</button>
+                <button id="guest-btn" class="guest-btn">Guest Mode</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="hero-content">
+                <h2 class="hero-title">Taste the <span class="usvi-accent">Future</span> of Caribbean Cuisine</h2>
+                <p class="hero-subtitle">Where traditional U.S.V.I flavors meet cyberpunk innovation</p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">99%</span>
+                        <span class="stat-label">Neo-Flavor Enhancements</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">2</span>
+                        <span class="stat-label">Signature Items and Expanding</span>
+                    </div>                    
+                </div>
+            </div>
+        </section>
+
+        <section id="menu" class="menu-section">
+            <video class="menu-background-video" autoplay muted>
+                <source src="/images/palm-trees-and-futuristic-neon-lit-cabanas-glow-on-a-tropical-beach_preview.mp4" type="video/mp4">
+            </video>
+            <div class="container">
+                <h2 class="section-title">Digital <span class="usvi-accent">Menu</span> </h2>
+                <div class="menu-grid" id="menu-grid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about-section">
+            <div class="container">
+                <div class="about-grid">
+                    <div class="about-text">
+                        <h2 class="section-title">About <span class="cyber-accent">Rell's <span class="usvi-accent">Kitchen</span> </span></h2>
+                        <p class="about-description">
+                            In the year 2157 on the neon-lit streets of the Neo-Virgin Islands,
+                            Chef Rell combines the warmth of traditional Caribbean cuisine with cutting-edge fusion technology.                             
+                        </p>
+                        <div class="features">
+                            <div class="feature">
+                                <span class="feature-icon">🌴</span>
+                                <span class="feature-text">Authentic Caribbean Treats</span>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">⚡</span>
+                                <span class="feature-text">Neo-Enhanced Island Flavors</span>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">🔬</span>
+                                <span class="feature-text">Supporting Local Students</span>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="about-description">🕒 Mon-Fri: 10AM-3PM CST<br>📞 (501) 760-9490<br>✉️ sales@rellskitchen.com</div>
+                    </div>
+                    <div class="about-visual">
+                        <div class="cyber-card">
+                            <div class="card-header">CHEF_RELL.EXE</div>
+                            <div class="card-content">
+                                <div class="data-line">EXPERIENCE: 5 YEARS</div>
+                                <div class="data-line">SPECIALITY: <span class="usvi-accent">FLAVOR</span>.EXE</div>
+                                <div class="data-line">STATUS: ONLINE</div>                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <h3 id="modal-title">Access Terminal</h3>
+                <div class="modal-tabs">
+                    <button class="tab-btn active" data-tab="login">LOGIN</button>
+                    <button class="tab-btn" data-tab="register">REGISTER</button>
+                </div>
+            </div>
+            
+            <div class="auth-forms">
+                <form id="login-form" class="form-content active">
+                    <div class="input-group">
+                        <input type="text" id="login-username" placeholder="Username" required>
+                        <label>Username</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <label>Password</label>
+                    </div>
+                    <button type="submit" class="submit-btn">CONNECT</button>
+                </form>
+                
+                <form id="register-form" class="form-content">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <input type="text" id="register-first-name" placeholder="First Name" required>
+                            <label>First Name</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="register-last-name" placeholder="Last Name" required>
+                            <label>Last Name</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="register-username" placeholder="Username" required>
+                        <label>Username</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="email" id="register-email" placeholder="Email" required>
+                        <label>Email</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="tel" id="register-phone" placeholder="Phone Number">
+                        <label>Phone Number</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="register-address-street" placeholder="Street Address">
+                        <label>Street Address</label>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <input type="text" id="register-address-city" placeholder="City">
+                            <label>City</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="register-address-state" placeholder="State">
+                            <label>State</label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="register-address-zip" placeholder="ZIP Code">
+                            <label>ZIP Code</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <select id="register-birth-month" class="size-dropdown">
+                            <option value="">Select Birth Month (Optional)</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                        <label>Birth Month (Optional)</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="register-password" placeholder="Password" required>
+                        <label>Password (min 6 characters)</label>
+                    </div>
+                    <button type="submit" class="submit-btn">INITIALIZE</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="reservation-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="modal-header">
+                <h3 id="reservation-title">Reserve Item</h3>
+            </div>
+            
+            <form id="reservation-form">
+                <div class="reservation-details">
+                    <div class="product-info">
+                        <img id="reservation-image" src="" alt="">
+                        <div>
+                            <h4 id="reservation-product-name"></h4>
+                            <p id="reservation-product-description"></p>
+                            <p class="price" id="reservation-product-price"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="quantity" min="1" max="3" value="1" required>
+                        <label>Quantity</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="date" id="pickup-date" required>
+                        <label>Pickup Date</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <textarea id="notes" placeholder="Special requests or notes" rows="3"></textarea>
+                        <label>Notes</label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn">RESERVE NOW</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>RELL'S KITCHEN</h3>
+                    <p>Neo-Caribbean Fusion • Est. 2157</p>
+                </div>
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h4>Navigate</h4>
+                        <a href="#menu">Menu</a>
+                        <a href="#about">About</a>
+                        <!-- <a href="/cookbook">Cookbook</a> -->
+                    </div>
+                    <div class="link-group">
+                        <h4>Connect</h4>
+                        <a href="#">✉️ sales@rellskitchen.com</a>
+                        <a href="#">Mechandise available soon!</a>
+                        <a href="#">Partnering with local business in Arkansas and the U.S.V.I</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2157 Rell's Kitchen. All rights reserved. | Powered by Kaiel™</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
