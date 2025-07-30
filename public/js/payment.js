@@ -698,6 +698,8 @@ class PaymentHandler {
     }
 
     async processPayment(paypalOrder) {
+        console.log('Processing payment with PayPal order:', JSON.stringify(paypalOrder, null, 2));
+        
         const customerEmail = document.getElementById('customer-email').value;
         const orderNotes = document.getElementById('order-notes').value;
 
@@ -708,11 +710,21 @@ class PaymentHandler {
             city: paypalShipping.admin_area_2 || '',
             state: paypalShipping.admin_area_1 || '',
             zip: paypalShipping.postal_code || ''
-        } : null;
+        } : {
+            // Fallback address for testing when PayPal doesn't provide shipping
+            street: 'No address provided',
+            city: 'Test City',
+            state: 'AR',
+            zip: '72000'
+        };
 
+        console.log('Extracted shipping address:', shippingAddress);
+        
         // Extract customer name from PayPal data
         const paypalPayer = paypalOrder.payer;
         const customerName = paypalPayer ? `${paypalPayer.name?.given_name || ''} ${paypalPayer.name?.surname || ''}`.trim() : 'PayPal Customer';
+        
+        console.log('Extracted customer name:', customerName);
 
         // Validate required data
         if (!customerEmail) {
