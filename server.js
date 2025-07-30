@@ -130,15 +130,17 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Insert default coupons
+  // Insert default coupon
   db.run(`INSERT OR IGNORE INTO coupons (id, code, discount_type, discount_value, active, usage_limit) 
           VALUES (?, ?, ?, ?, ?, ?)`, 
     [uuidv4(), 'family', 'percentage', 25, 1, -1]);
-    
-  // Insert test coupon for payment testing (90% off)
-  db.run(`INSERT OR IGNORE INTO coupons (id, code, discount_type, discount_value, active, usage_limit) 
-          VALUES (?, ?, ?, ?, ?, ?)`, 
-    [uuidv4(), 'test', 'percentage', 90, 1, -1]);
+
+  // Deactivate test coupon if it exists
+  db.run(`UPDATE coupons SET active = 0 WHERE code = 'test'`, (err) => {
+    if (!err) {
+      console.log('Deactivated test coupon');
+    }
+  });
 
   // Create subscriptions table
   db.run(`CREATE TABLE IF NOT EXISTS subscriptions (
