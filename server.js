@@ -364,7 +364,7 @@ app.get('/api/sub-products/:productId', (req, res) => {
   
   console.log('Sub-products API called with productId:', productId);
   
-  db.all('SELECT * FROM sub_products WHERE product_id = ? ORDER BY size_oz', [productId], (err, subProducts) => {
+  db.all('SELECT * FROM sub_products WHERE parent_product_id = ? ORDER BY size_oz', [productId], (err, subProducts) => {
     if (err) {
       console.error('Sub-products database error:', err);
       return res.status(500).json({ error: 'Database error' });

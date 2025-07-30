@@ -21,13 +21,13 @@ function initializeDatabase() {
 
         db.run(`CREATE TABLE IF NOT EXISTS sub_products (
             id TEXT PRIMARY KEY,
-            product_id TEXT,
+            parent_product_id TEXT,
             size TEXT NOT NULL,
             size_oz INTEGER,
             price REAL NOT NULL,
             inventory_count INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (product_id) REFERENCES products (id)
+            FOREIGN KEY (parent_product_id) REFERENCES products (id)
         )`);
 
         // Insert products
@@ -65,7 +65,7 @@ function initializeDatabase() {
 
         // Insert sub-products
         const insertSubProduct = db.prepare(`INSERT OR REPLACE INTO sub_products 
-            (id, product_id, size, size_oz, price, inventory_count, created_at) 
+            (id, parent_product_id, size, size_oz, price, inventory_count, created_at) 
             VALUES (?, ?, ?, ?, ?, ?, ?)`);
 
         // Tamarind Splice sub-products
