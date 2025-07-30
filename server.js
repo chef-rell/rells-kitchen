@@ -191,6 +191,8 @@ db.serialize(() => {
   db.run(`ALTER TABLE orders ADD COLUMN user_id TEXT`, (err) => {
     if (err && !err.message.includes('duplicate column name')) {
       console.error('Error adding user_id column to orders:', err);
+    } else if (!err) {
+      console.log('Successfully added user_id column to orders table');
     }
   });
 
@@ -706,78 +708,27 @@ db.serialize(() => {
     sub_product_id TEXT,
     customer_email TEXT NOT NULL,
     customer_name TEXT NOT NULL,
+    customer_phone TEXT,
+    shipping_street TEXT,
+    shipping_city TEXT,
+    shipping_state TEXT,
+    shipping_zip TEXT,
+    shipping_method TEXT,
+    shipping_cost DECIMAL(10,2) DEFAULT 0,
+    coupon_code TEXT,
+    coupon_discount DECIMAL(10,2) DEFAULT 0,
     quantity INTEGER NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     paypal_order_id TEXT,
     order_notes TEXT,
     status TEXT DEFAULT 'completed',
+    user_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products (id),
     FOREIGN KEY (sub_product_id) REFERENCES sub_products (id)
   )`);
 
-  // Add sub_product_id column if it doesn't exist
-  db.run(`ALTER TABLE orders ADD COLUMN sub_product_id TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding sub_product_id column to orders:', err);
-    }
-  });
-
-  // Add shipping columns if they don't exist
-  db.run(`ALTER TABLE orders ADD COLUMN customer_phone TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding customer_phone column to orders:', err);
-    }
-  });
-
-  db.run(`ALTER TABLE orders ADD COLUMN shipping_street TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding shipping_street column to orders:', err);
-    }
-  });
-
-  db.run(`ALTER TABLE orders ADD COLUMN shipping_city TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding shipping_city column to orders:', err);
-    }
-  });
-
-  db.run(`ALTER TABLE orders ADD COLUMN shipping_state TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding shipping_state column to orders:', err);
-    }
-  });
-
-  db.run(`ALTER TABLE orders ADD COLUMN shipping_zip TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding shipping_zip column to orders:', err);
-    }
-  });
-
-  db.run(`ALTER TABLE orders ADD COLUMN shipping_method TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding shipping_method column to orders:', err);
-    }
-  });
-
-  db.run(`ALTER TABLE orders ADD COLUMN shipping_cost DECIMAL(10,2) DEFAULT 0`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding shipping_cost column to orders:', err);
-    }
-  });
-
-  // Add coupon tracking columns
-  db.run(`ALTER TABLE orders ADD COLUMN coupon_code TEXT`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding coupon_code column:', err);
-    }
-  });
-
-  db.run(`ALTER TABLE orders ADD COLUMN coupon_discount DECIMAL(10,2) DEFAULT 0`, (err) => {
-    if (err && !err.message.includes('duplicate column name')) {
-      console.error('Error adding coupon_discount column:', err);
-    }
-  });
+  console.log('Orders table created with all required columns');
 });
 
 app.post('/api/process-payment', optionalAuth, async (req, res) => {
