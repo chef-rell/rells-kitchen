@@ -28,10 +28,16 @@ class PaymentHandler {
     }
 
     loadProductFromURL() {
+        console.log('Loading product from URL...');
+        console.log('Current URL:', window.location.href);
+        
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('product');
         
+        console.log('Extracted product ID:', productId);
+        
         if (!productId) {
+            console.error('No product ID found in URL. Redirecting to home.');
             window.location.href = '/';
             return;
         }
