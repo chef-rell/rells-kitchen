@@ -16,8 +16,12 @@ class PaymentHandler {
     }
 
     init() {
+        console.log('PaymentHandler initializing...');
         this.loadProductFromURL();
-        this.checkUserSubscription();
+        // Run user subscription check in parallel, don't wait for it
+        this.checkUserSubscription().catch(err => {
+            console.log('User subscription check failed, continuing anyway:', err);
+        });
         this.updateAuthUI();
         this.setupEventListeners();
         this.setupPayPalButtons();
@@ -82,11 +86,13 @@ class PaymentHandler {
 
     async checkUserSubscription() {
         try {
+            console.log('Checking user subscription status...');
             const response = await fetch('/api/user', { credentials: 'include' });
             
             if (response.ok) {
                 const data = await response.json();
                 this.currentUser = data.user;
+                console.log('User data loaded:', this.currentUser);
                 
                 if (this.currentUser && this.currentUser.isSubscribed && this.currentUser.subscription) {
                     // Benefits activate immediately upon subscription
@@ -96,9 +102,14 @@ class PaymentHandler {
                 
                 // Update auth UI after getting user data
                 this.updateAuthUI();
+            } else {
+                console.log('User not logged in (401), continuing as guest');
+                this.currentUser = null;
+                this.updateAuthUI();
             }
         } catch (error) {
             console.log('Could not check subscription status:', error);
+            this.currentUser = null;
             this.updateAuthUI(); // Still update UI even if no user
         }
     }
