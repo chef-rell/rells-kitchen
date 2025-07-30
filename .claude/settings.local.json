@@ -11,7 +11,9 @@
       "Bash(git branch:*)",
       "Bash(git remote set-url:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mv:*)",
+      "Bash(mv favicon.ico public/)"
     ],
     "deny": []
   }
