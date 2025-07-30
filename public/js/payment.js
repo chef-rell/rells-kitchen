@@ -339,6 +339,15 @@ class PaymentHandler {
             });
         }
 
+        // Email field validation
+        const emailField = document.getElementById('customer-email');
+        if (emailField) {
+            emailField.addEventListener('input', () => {
+                // Clear error styling when user starts typing
+                emailField.style.borderColor = '';
+            });
+        }
+
     }
 
     updateTotalPrice() {
@@ -484,11 +493,26 @@ class PaymentHandler {
 
             paypal.Buttons({
             createOrder: (data, actions) => {
-                const customerEmail = document.getElementById('customer-email').value;
+                const emailField = document.getElementById('customer-email');
+                const customerEmail = emailField.value.trim();
+                
+                // Clear any previous error styling
+                emailField.style.borderColor = '';
                 
                 if (!customerEmail) {
-                    this.showNotification('Please enter your email address before proceeding.', 'warning');
+                    this.showNotification('Please enter your email address before proceeding.', 'error');
+                    emailField.style.borderColor = 'var(--error-red)';
+                    emailField.focus();
                     return Promise.reject(new Error('Missing email address'));
+                }
+                
+                // Basic email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(customerEmail)) {
+                    this.showNotification('Please enter a valid email address.', 'error');
+                    emailField.style.borderColor = 'var(--error-red)';
+                    emailField.focus();
+                    return Promise.reject(new Error('Invalid email address'));
                 }
 
                 if (!this.selectedSubProduct) {
