@@ -776,6 +776,13 @@ db.serialize(() => {
 });
 
 app.post('/api/process-payment', optionalAuth, async (req, res) => {
+  console.log('Payment processing started with data:', {
+    subProductId: req.body.subProductId,
+    productId: req.body.productId,
+    customerEmail: req.body.customerEmail,
+    paypalOrderId: req.body.paypalOrderId
+  });
+
   const { 
     subProductId,
     productId, 
@@ -794,18 +801,36 @@ app.post('/api/process-payment', optionalAuth, async (req, res) => {
   } = req.body;
 
   if (!subProductId || !productId || !quantity || !customerEmail || !customerName || !paypalOrderId) {
+    console.log('Missing required fields:', {
+      subProductId: !!subProductId,
+      productId: !!productId,
+      quantity: !!quantity,
+      customerEmail: !!customerEmail,
+      customerName: !!customerName,
+      paypalOrderId: !!paypalOrderId
+    });
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zip) {
+    console.log('Missing shipping address:', shippingAddress);
     return res.status(400).json({ error: 'Complete shipping address is required' });
   }
 
   try {
     // Get sub-product details
+    console.log('Looking up sub-product with ID:', subProductId);
     db.get('SELECT sp.*, p.name as product_name FROM sub_products sp JOIN products p ON sp.parent_product_id = p.id WHERE sp.id = ?', [subProductId], (err, subProduct) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
-      if (!subProduct) return res.status(404).json({ error: 'Product variant not found' });
+      if (err) {
+        console.error('Database error getting sub-product:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      if (!subProduct) {
+        console.log('Sub-product not found with ID:', subProductId);
+        return res.status(404).json({ error: 'Product variant not found' });
+      }
+      
+      console.log('Found sub-product:', subProduct);
 
       // Check inventory
       if (!subProduct.inventory_count || subProduct.inventory_count < quantity) {
@@ -815,6 +840,16 @@ app.post('/api/process-payment', optionalAuth, async (req, res) => {
       const subtotal = subProduct.price * quantity;
       const totalAmount = (subtotal + (shippingCost || 0)).toFixed(2);
       const orderId = uuidv4();
+
+      console.log('Creating order with data:', {
+        orderId,
+        productId,
+        subProductId,
+        customerEmail,
+        customerName,
+        totalAmount,
+        paypalOrderId
+      });
 
       // Create order record with shipping information
       db.run(`INSERT INTO orders 
@@ -827,7 +862,12 @@ app.post('/api/process-payment', optionalAuth, async (req, res) => {
          shippingMethod, shippingCost || 0, quantity, totalAmount, paypalOrderId, orderNotes, 
          couponCode || null, couponDiscount || 0, req.user?.userId || null],
         function(err) {
-          if (err) return res.status(500).json({ error: 'Failed to create order' });
+          if (err) {
+            console.error('Failed to create order:', err);
+            return res.status(500).json({ error: 'Failed to create order' });
+          }
+          
+          console.log('Order created successfully with ID:', orderId);
 
           // Update sub-product inventory
           db.run('UPDATE sub_products SET inventory_count = inventory_count - ? WHERE id = ?', 
