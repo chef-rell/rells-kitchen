@@ -18,12 +18,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://www.paypal.com", "https://www.paypalobjects.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://www.paypal.com", "https://www.paypalobjects.com", "https://*.paypal.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://www.paypal.com", "https://api.paypal.com", "https://postcollector.paypal.com"],
-      frameSrc: ["'self'", "https://www.paypal.com"]
+      connectSrc: ["'self'", "https://www.paypal.com", "https://api.paypal.com", "https://postcollector.paypal.com", "https://*.paypal.com"],
+      frameSrc: ["'self'", "https://www.paypal.com", "https://*.paypal.com"]
     }
   }
 }));
@@ -31,7 +31,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files with proper caching headers
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1d',
+  etag: false
+}));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -869,7 +873,27 @@ app.get('/api/orders', authenticateToken, (req, res) => {
   });
 });
 
+// Debug route to check static file serving
+app.get('/debug/static', (req, res) => {
+  const fs = require('fs');
+  const staticPath = path.join(__dirname, 'public');
+  
+  fs.readdir(staticPath, (err, files) => {
+    if (err) {
+      return res.json({ error: 'Cannot read public directory', path: staticPath });
+    }
+    
+    res.json({ 
+      publicPath: staticPath,
+      files: files,
+      imagesExists: fs.existsSync(path.join(staticPath, 'images')),
+      currentDir: __dirname
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`🏝️  Rell's Kitchen server running on port ${PORT}`);
   console.log(`🌴  Caribbean-Cyberpunk fusion cuisine awaits...`);
+  console.log(`📁  Static files served from: ${path.join(__dirname, 'public')}`);
 });
