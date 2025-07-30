@@ -37,24 +37,42 @@ class PaymentHandler {
 
     async fetchProduct(productId) {
         try {
+            console.log('Fetching product with ID:', productId);
+            
             const [productResponse, subProductResponse] = await Promise.all([
                 fetch('/api/products', { credentials: 'include' }),
                 fetch(`/api/sub-products/${productId}`, { credentials: 'include' })
             ]);
 
+            console.log('Product response status:', productResponse.status);
+            console.log('Sub-product response status:', subProductResponse.status);
+
             if (productResponse.ok && subProductResponse.ok) {
                 const productData = await productResponse.json();
                 const subProductData = await subProductResponse.json();
                 
+                console.log('Product data:', productData);
+                console.log('Sub-product data:', subProductData);
+                
                 this.currentProduct = productData.products.find(p => p.id === productId);
                 this.subProducts = subProductData.subProducts;
                 
+                console.log('Found current product:', this.currentProduct);
+                console.log('Found sub-products:', this.subProducts);
+                
                 if (!this.currentProduct || this.subProducts.length === 0) {
+                    console.error('Product or sub-products not found. Redirecting to home.');
                     window.location.href = '/';
                     return;
                 }
 
                 this.renderProduct();
+            } else {
+                console.error('API request failed:', {
+                    productStatus: productResponse.status,
+                    subProductStatus: subProductResponse.status
+                });
+                window.location.href = '/';
             }
         } catch (error) {
             console.error('Failed to load product:', error);

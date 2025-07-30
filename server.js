@@ -362,8 +362,15 @@ app.get('/api/products', optionalAuth, (req, res) => {
 app.get('/api/sub-products/:productId', (req, res) => {
   const { productId } = req.params;
   
+  console.log('Sub-products API called with productId:', productId);
+  
   db.all('SELECT * FROM sub_products WHERE product_id = ? ORDER BY size_oz', [productId], (err, subProducts) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
+    if (err) {
+      console.error('Sub-products database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    console.log('Found sub-products:', subProducts.length, 'items');
     res.json({ subProducts });
   });
 });
@@ -870,6 +877,28 @@ app.get('/api/orders', authenticateToken, (req, res) => {
   `, (err, orders) => {
     if (err) return res.status(500).json({ error: 'Database error' });
     res.json({ orders });
+  });
+});
+
+// Debug route to check database products
+app.get('/debug/products', (req, res) => {
+  db.all('SELECT * FROM products', (err, products) => {
+    if (err) {
+      return res.json({ error: 'Database error', details: err.message });
+    }
+    
+    db.all('SELECT * FROM sub_products', (err2, subProducts) => {
+      if (err2) {
+        return res.json({ error: 'Sub-products database error', details: err2.message });
+      }
+      
+      res.json({ 
+        products: products,
+        subProducts: subProducts,
+        productCount: products.length,
+        subProductCount: subProducts.length
+      });
+    });
   });
 });
 
