@@ -14,6 +14,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'rells_kitchen_secret_key_2024';
 
+// Trust proxy when behind Railway/Heroku/etc reverse proxy
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
