@@ -915,6 +915,88 @@ app.get('/debug/static', (req, res) => {
   });
 });
 
+// Admin endpoint to view database data (secure)
+app.get('/admin/database/:table', (req, res) => {
+  // Simple authentication check
+  const adminKey = req.query.key;
+  const validKey = 'rells-kitchen-admin-2025';
+  
+  if (adminKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  
+  const { table } = req.params;
+  const validTables = ['users', 'orders', 'products', 'sub_products', 'subscriptions', 'coupons'];
+  
+  if (!validTables.includes(table)) {
+    return res.status(400).json({ error: 'Invalid table name' });
+  }
+  
+  let query = `SELECT * FROM ${table} ORDER BY created_at DESC`;
+  const limit = req.query.limit ? parseInt(req.query.limit) : 50;
+  
+  if (limit && limit > 0) {
+    query += ` LIMIT ${limit}`;
+  }
+  
+  db.all(query, (err, rows) => {
+    if (err) {
+      console.error(`Error querying ${table}:`, err);
+      return res.status(500).json({ error: 'Database query failed' });
+    }
+    
+    res.json({
+      table: table,
+      count: rows.length,
+      data: rows,
+      timestamp: new Date().toISOString()
+    });
+  });
+});
+
+// Admin endpoint for database stats
+app.get('/admin/stats', (req, res) => {
+  // Simple authentication check
+  const adminKey = req.query.key;
+  const validKey = 'rells-kitchen-admin-2025';
+  
+  if (adminKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  
+  const stats = {};
+  const tables = ['users', 'orders', 'products', 'sub_products', 'subscriptions'];
+  let completed = 0;
+  
+  tables.forEach(table => {
+    db.get(`SELECT COUNT(*) as count FROM ${table}`, (err, row) => {
+      if (err) {
+        stats[table] = { error: err.message };
+      } else {
+        stats[table] = { count: row.count };
+      }
+      
+      completed++;
+      if (completed === tables.length) {
+        // Get recent activity
+        db.all(`SELECT 'user' as type, created_at FROM users 
+                UNION ALL 
+                SELECT 'order' as type, created_at FROM orders 
+                ORDER BY created_at DESC LIMIT 10`, (err, recent) => {
+          if (!err) {
+            stats.recent_activity = recent;
+          }
+          
+          res.json({
+            stats: stats,
+            timestamp: new Date().toISOString()
+          });
+        });
+      }
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`🏝️  Rell's Kitchen server running on port ${PORT}`);
   console.log(`🌴  Caribbean-Cyberpunk fusion cuisine awaits...`);
