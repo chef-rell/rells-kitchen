@@ -12,6 +12,7 @@ class PaymentHandler {
         this.currentUser = null;
         this.isSubscriber = false;
         this.subscriberDiscount = 0;
+        this.paypalButtonsInitialized = false;
         this.init();
     }
 
@@ -469,26 +470,17 @@ class PaymentHandler {
     setupPayPalButtons() {
         console.log('Setting up PayPal buttons with production client ID...');
         
+        // Prevent multiple initialization
+        if (this.paypalButtonsInitialized) {
+            console.log('PayPal buttons already initialized, skipping...');
+            return;
+        }
+        
         try {
-            // Prevent any form submission behavior
+            // Clear any existing PayPal button container content
             const paypalContainer = document.getElementById('paypal-button-container');
             if (paypalContainer) {
-                // Prevent any parent form submission
-                const parentForm = paypalContainer.closest('form');
-                if (parentForm) {
-                    parentForm.addEventListener('submit', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    });
-                }
-                
-                // Prevent any unwanted click behaviors on the container
-                paypalContainer.addEventListener('click', (e) => {
-                    // Only prevent default if it's not a PayPal button click
-                    if (!e.target.closest('[data-paypal-button]')) {
-                        e.stopPropagation();
-                    }
-                });
+                paypalContainer.innerHTML = '';
             }
 
             paypal.Buttons({
@@ -651,8 +643,10 @@ class PaymentHandler {
             }
         }).render('#paypal-button-container').then(() => {
             console.log('PayPal buttons rendered successfully');
+            this.paypalButtonsInitialized = true;
         }).catch(error => {
             console.error('Failed to render PayPal buttons:', error);
+            this.paypalButtonsInitialized = false;
             this.showPayPalError();
         });
         
