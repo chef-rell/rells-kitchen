@@ -40,7 +40,7 @@ function initializeDatabase() {
             'fixed-tamarind-stew-id',
             'Tamarind_Splice',
             "This beloved Caribbean comfort food delivers the perfect harmony of sweet and tangy flavors. A treasured local dish known as 'Tamarind Stew'.",
-            5.99,
+            6.99,
             1,
             4,
             4,
@@ -74,7 +74,7 @@ function initializeDatabase() {
             'fixed-tamarind-stew-id',
             '4oz',
             4,
-            5.99,
+            6.99,
             14,
             '2025-07-26 21:28:40'
         ]);
@@ -84,7 +84,7 @@ function initializeDatabase() {
             'fixed-tamarind-stew-id',
             '8oz',
             8,
-            11.98,
+            13.98,
             15,
             '2025-07-26 21:28:40'
         ]);
@@ -94,7 +94,7 @@ function initializeDatabase() {
             'fixed-tamarind-stew-id',
             '16oz',
             16,
-            23.96,
+            27.96,
             11,
             '2025-07-26 21:36:40'
         ]);
