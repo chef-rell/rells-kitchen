@@ -579,8 +579,30 @@ body {
   border-radius: 15px;
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
   box-shadow: 0 20px 60px rgba(0, 245, 255, 0.3);
   animation: modalSlide 0.3s ease;
+}
+
+/* Custom scrollbar for modal */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 245, 255, 0.1);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 245, 255, 0.8);
 }
 
 @keyframes modalSlide {
@@ -879,7 +901,8 @@ body {
   
   .modal-content {
     width: 95%;
-    margin: 10% auto;
+    margin: 2% auto;
+    max-height: 95vh;
   }
 }
 
