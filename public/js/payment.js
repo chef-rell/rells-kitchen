@@ -492,6 +492,12 @@ class PaymentHandler {
             }
 
             paypal.Buttons({
+            style: {
+                layout: 'vertical',
+                color: 'blue',
+                shape: 'rect',
+                label: 'paypal'
+            },
             createOrder: (data, actions) => {
                 const emailField = document.getElementById('customer-email');
                 const customerEmail = emailField.value.trim();
