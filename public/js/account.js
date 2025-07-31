@@ -272,6 +272,8 @@ class AccountManager {
             },
             onApprove: async (data, actions) => {
                 try {
+                    console.log('PayPal subscription approved:', data);
+                    
                     const response = await fetch('/api/subscribe', {
                         method: 'POST',
                         headers: {
@@ -283,7 +285,9 @@ class AccountManager {
                         })
                     });
 
+                    console.log('Subscription API response status:', response.status);
                     const result = await response.json();
+                    console.log('Subscription API response data:', result);
 
                     if (response.ok) {
                         this.showNotification('Subscription activated successfully!', 'success');
@@ -291,6 +295,7 @@ class AccountManager {
                         await this.checkAuth();
                         this.loadSubscriptionInfo();
                     } else {
+                        console.error('Subscription activation failed:', result);
                         this.showNotification(result.error || 'Subscription activation failed', 'error');
                     }
                 } catch (error) {

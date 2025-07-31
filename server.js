@@ -570,21 +570,35 @@ app.post('/api/create-subscription-plan', authenticateToken, async (req, res) =>
 
 // Subscription routes
 app.post('/api/subscribe', authenticateToken, (req, res) => {
+  console.log('Subscription request received:', {
+    userId: req.user.userId,
+    userRole: req.user.role,
+    body: req.body
+  });
+
   if (req.user.role === 'guest') {
+    console.log('Subscription denied: guest user');
     return res.status(403).json({ error: 'Member account required for subscription' });
   }
 
   const { subscriptionID } = req.body;
   
   if (!subscriptionID) {
+    console.log('Subscription failed: missing PayPal subscription ID');
     return res.status(400).json({ error: 'PayPal subscription ID required' });
   }
 
+  console.log('Checking for existing subscription for user:', req.user.userId);
+
   // Check if user already has an active subscription
   db.get('SELECT * FROM subscriptions WHERE user_id = ? AND status = "active"', [req.user.userId], (err, existingSubscription) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
+    if (err) {
+      console.error('Database error checking existing subscription:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
     
     if (existingSubscription) {
+      console.log('Subscription denied: user already has active subscription:', existingSubscription.id);
       return res.status(400).json({ error: 'You already have an active subscription' });
     }
 
@@ -592,18 +606,30 @@ app.post('/api/subscribe', authenticateToken, (req, res) => {
     const nextBillingDate = new Date();
     nextBillingDate.setMonth(nextBillingDate.getMonth() + 1); // Monthly billing
 
+    console.log('Creating new subscription:', {
+      subscriptionId: subscriptionId,
+      userId: req.user.userId,
+      paypalSubscriptionId: subscriptionID,
+      nextBillingDate: nextBillingDate.toISOString()
+    });
+
     db.run(`INSERT INTO subscriptions (
       id, user_id, paypal_subscription_id, status, next_billing_date
     ) VALUES (?, ?, ?, ?, ?)`, 
       [subscriptionId, req.user.userId, subscriptionID, 'active', nextBillingDate.toISOString()], 
       function(err) {
-        if (err) return res.status(500).json({ error: 'Subscription creation failed' });
+        if (err) {
+          console.error('Failed to create subscription in database:', err);
+          return res.status(500).json({ error: 'Subscription creation failed' });
+        }
+        
+        console.log('Subscription created successfully:', subscriptionId);
         
         res.json({ 
           message: 'Subscription activated successfully',
           subscriptionId: subscriptionId,
           benefits: {
-            discount: '5% site-wide discount',
+            discount: '10% site-wide discount',
             samples: 'Monthly 4oz samples of new products',
             earlyAccess: 'Early access to new releases'
           }
