@@ -46,7 +46,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // PostgreSQL connection
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:qYsSoNHsFiSRLdVzmzHknIBufxqQwmmK@shuttle.proxy.rlwy.net:57798/railway';
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:WxSSoUGRLEMHfpxpBfQZoiAvvBdRrDls@tramway.proxy.rlwy.net:31100/railway';
 
 const pool = new Pool({
   connectionString: connectionString,
@@ -632,7 +632,7 @@ app.post('/api/create-subscription-plan', authenticateToken, async (req, res) =>
     // Get PayPal access token
     const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64');
     
-    const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+    const tokenResponse = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -645,7 +645,7 @@ app.post('/api/create-subscription-plan', authenticateToken, async (req, res) =>
     const accessToken = tokenData.access_token;
 
     // First create a product
-    const productResponse = await fetch('https://api-m.paypal.com/v1/catalogs/products', {
+    const productResponse = await fetch('https://api-m.sandbox.paypal.com/v1/catalogs/products', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -666,7 +666,7 @@ app.post('/api/create-subscription-plan', authenticateToken, async (req, res) =>
     console.log('Product creation response:', productData);
 
     // Create subscription plan
-    const planResponse = await fetch('https://api-m.paypal.com/v1/billing/plans', {
+    const planResponse = await fetch('https://api-m.sandbox.paypal.com/v1/billing/plans', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
