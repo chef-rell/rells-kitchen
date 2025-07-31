@@ -218,8 +218,7 @@ async function initializeTables() {
       ON CONFLICT (code) DO NOTHING
     `, [uuidv4(), 'family', 'percentage', 25, true, -1]);
 
-    // Deactivate test coupon if it exists
-    await client.query(`UPDATE coupons SET active = false WHERE code = 'test'`);
+    // Note: Test coupons can be manually deactivated if needed
 
     // Fix existing subscriptions with NULL next_billing_date
     await client.query(`
@@ -1136,6 +1135,43 @@ app.get('/admin/stats', async (req, res) => {
     });
   } catch (err) {
     console.error('Stats fetch error:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Admin endpoint to activate/deactivate coupons
+app.post('/admin/coupon/:code/:action', async (req, res) => {
+  const adminKey = req.query.key;
+  const validKey = 'rells-kitchen-admin-2025';
+  
+  if (adminKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  
+  const { code, action } = req.params;
+  
+  if (!['activate', 'deactivate'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action. Use activate or deactivate' });
+  }
+  
+  try {
+    const active = action === 'activate';
+    const result = await pool.query(
+      'UPDATE coupons SET active = $1 WHERE code = $2',
+      [active, code]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Coupon not found' });
+    }
+    
+    res.json({ 
+      message: `Coupon '${code}' ${action}d successfully`,
+      code: code,
+      active: active
+    });
+  } catch (err) {
+    console.error(`Error ${action}ing coupon:`, err);
     res.status(500).json({ error: 'Database error' });
   }
 });
