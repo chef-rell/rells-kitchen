@@ -953,13 +953,6 @@ app.post('/api/calculate-shipping', optionalAuth, async (req, res) => {
     // Fallback to static rates if USPS API fails
     const fallbackRates = [
       {
-        service: 'PICKUP',
-        name: 'Hold For Pickup',
-        cost: 0,
-        deliveryTime: 'Hold for pickup',
-        description: 'UPS or USPS Post Office (Hold For Pickup) - FREE'
-      },
-      {
         service: 'GROUND_ADVANTAGE',
         name: 'Ground Advantage',
         cost: 9.95,
@@ -1023,8 +1016,8 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
     } catch (shippingError) {
       console.warn('USPS OAuth shipping calculation failed, using fallback rates:', shippingError.message);
       shippingRates = [
-        { service: 'PICKUP', name: 'Hold For Pickup', cost: 0, deliveryTime: 'Hold for pickup', description: 'Hold For Pickup - FREE' },
-        { service: 'STANDARD', name: 'Standard Shipping', cost: 12.50, deliveryTime: '3-5 business days', description: 'Standard Shipping (3-5 business days) - $12.50' }
+        { service: 'STANDARD', name: 'Standard Shipping', cost: 12.50, deliveryTime: '3-5 business days', description: 'Standard Shipping (3-5 business days) - $12.50' },
+        { service: 'EXPEDITED', name: 'Expedited Shipping', cost: 25.00, deliveryTime: '1-2 business days', description: 'Expedited Shipping (1-2 business days) - $25.00' }
       ];
     }
     

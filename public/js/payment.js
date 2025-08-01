@@ -1124,13 +1124,6 @@ class PaymentHandler {
         // Show fallback options
         const fallbackRates = [
             {
-                service: 'PICKUP',
-                name: 'Hold For Pickup',
-                cost: 0,
-                deliveryTime: 'Hold for pickup',
-                description: 'UPS or USPS Post Office (Hold For Pickup) - FREE'
-            },
-            {
                 service: 'GROUND_ADVANTAGE',
                 name: 'Ground Advantage',
                 cost: 9.95,

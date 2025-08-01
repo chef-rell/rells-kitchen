@@ -189,14 +189,7 @@ class USPSOAuthIntegration {
                 }
             }
 
-            // Add pickup option (always free)
-            rates.unshift({
-                service: 'PICKUP',
-                name: 'Hold For Pickup',
-                cost: 0,
-                deliveryTime: 'Hold for pickup',
-                description: 'UPS or USPS Post Office (Hold For Pickup) - FREE'
-            });
+            // No longer offering pickup option
 
             // Cache the rates before returning
             this.setCachedRate(cacheKey, rates);
@@ -204,14 +197,14 @@ class USPSOAuthIntegration {
             return rates;
         } catch (error) {
             console.error('USPS OAuth rate calculation failed:', error);
-            // Return fallback rates
+            // Return fallback rates without pickup option
             return [
                 {
-                    service: 'PICKUP',
-                    name: 'Hold For Pickup',
-                    cost: 0,
-                    deliveryTime: 'Hold for pickup',
-                    description: 'UPS or USPS Post Office (Hold For Pickup) - FREE'
+                    service: 'STANDARD',
+                    name: 'Standard Shipping',
+                    cost: 12.50,
+                    deliveryTime: '3-5 business days',
+                    description: 'Standard Shipping (3-5 business days) - $12.50'
                 }
             ];
         }
