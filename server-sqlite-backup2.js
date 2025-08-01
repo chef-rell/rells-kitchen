@@ -46,7 +46,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // PostgreSQL connection
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:WxSSoUGRLEMHfpxpBfQZoiAvvBdRrDls@tramway.proxy.rlwy.net:31100/railway';
+const connectionString = process.env.DATABASE_URL;
 
 const pool = new Pool({
   connectionString: connectionString,

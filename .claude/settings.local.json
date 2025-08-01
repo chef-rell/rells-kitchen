@@ -13,7 +13,20 @@
       "Bash(git push:*)",
       "Bash(git add:*)",
       "Bash(mv:*)",
-      "Bash(mv favicon.ico public/)"
+      "Bash(mv favicon.ico public/)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(cp:*)",
+      "Bash(npm:*)",
+      "Bash(psql:*)",
+      "Bash(timeout:*)",
+      "Bash(railway status:*)",
+      "Bash(railway login:*)",
+      "Bash(wmic process where:*)",
+      "Bash(git rm:*)",
+      "Bash(rm:*)",
+      "Bash(git filter-branch:*)"
     ],
     "deny": []
   }
