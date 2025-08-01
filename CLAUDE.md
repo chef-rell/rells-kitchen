@@ -51,10 +51,21 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Testing**: Admin endpoints available at `/admin/*` with proper key
 - **Git**: Main branch, commits include Claude attribution
 
+## Current Issues
+
+### Products Not Displaying (2025-08-01)
+- **Issue**: Website shows "2 Signature Items" but no products display in menu
+- **Root Cause**: Frontend/Backend mismatch during product name change attempt
+- **Status**: Under investigation
+- **API Status**: `/api/products` returns correct data (Tamarind_Splice, Quantum_Mango)
+- **Frontend**: Reverted to look for "Tamarind_Splice" to match database
+- **Next Steps**: Investigate JavaScript console logs and deployment issues
+
 ## Known Issues / TODO
-- [ ] Execute database update for product name change
-- [ ] Rotate exposed PostgreSQL credentials
-- [ ] Test product name change on live site
+- [x] Execute database update for product name change (reverted approach)
+- [ ] Rotate exposed PostgreSQL credentials  
+- [ ] Fix product display issue on live site
+- [ ] Plan proper product name change for later
 
 ## Commands
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)

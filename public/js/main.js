@@ -254,18 +254,14 @@ class RellsKitchen {
 
     async loadProducts() {
         try {
-            console.log('Loading products from API...');
             const response = await fetch('/api/products', {
                 credentials: 'include'
             });
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('Products loaded:', data.products);
                 this.products = data.products;
                 this.renderProducts();
-            } else {
-                console.error('Failed to load products - Response not OK:', response.status);
             }
         } catch (error) {
             console.error('Failed to load products:', error);
@@ -273,17 +269,13 @@ class RellsKitchen {
     }
 
     renderProducts() {
-        console.log('Rendering products:', this.products);
         const menuGrid = document.getElementById('menu-grid');
-        if (!menuGrid) {
-            console.error('menu-grid element not found!');
-            return;
-        }
+        if (!menuGrid) return;
 
         menuGrid.innerHTML = this.products.map(product => {
             // Add images for specific products
             let productImage = '';
-            if (product.name === 'Tamarind_Splice') {
+            if (product.name === 'Tamarind_Sweets') {
                 productImage = `<div class="product-image">
                     <img src="/images/tamarind_stew.webp" alt="${product.name}" loading="lazy">
                 </div>`;
