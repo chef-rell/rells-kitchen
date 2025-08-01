@@ -268,7 +268,7 @@ async function initializeDatabase() {
         inventory_count = EXCLUDED.inventory_count
     `, [
       'fixed-tamarind-stew-id',
-      'Tamarind_Splice',
+      'Tamarind_Sweets',
       "This beloved Caribbean comfort food delivers the perfect harmony of sweet and tangy flavors. A treasured local dish known as 'Tamarind Stew'.",
       6.99,
       true,

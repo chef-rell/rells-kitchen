@@ -193,7 +193,7 @@ async function initializePostgreSQLData() {
       ($10, $11, $12, $13, $14, $15, $16, $17, $18)
       ON CONFLICT (id) DO NOTHING
     `, [
-      'fixed-tamarind-stew-id', 'Tamarind_Splice', 'This beloved Caribbean comfort food delivers the perfect harmony of sweet and tangy flavors. A treasured local dish known as \'Tamarind Stew\'.', 6.99, true, 4, 4, '2025-07-26 19:04:59', 15,
+      'fixed-tamarind-stew-id', 'Tamarind_Sweets', 'This beloved Caribbean comfort food delivers the perfect harmony of sweet and tangy flavors. A treasured local dish known as \'Tamarind Stew\'.', 6.99, true, 4, 4, '2025-07-26 19:04:59', 15,
       'fixed-quantum-mango-id', 'Quantum_Mango', 'Succulent St. Thomas mango, slow-simmered with traditional island spices until fork-tender. This aromatic masterpiece, known locally as \'Mango Stew\', delivers layers of complex, neo-Caribbean flavors.', 8.99, true, 3, 4, '2025-07-26 19:04:59', 0
     ]);
 
