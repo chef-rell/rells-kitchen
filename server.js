@@ -1176,6 +1176,33 @@ app.post('/admin/coupon/:code/:action', async (req, res) => {
   }
 });
 
+// TEMPORARY: Admin endpoint to fix product name
+app.get('/admin/fix-tamarind', async (req, res) => {
+  const adminKey = req.query.key;
+  const validKey = 'rells-kitchen-admin-2025';
+  
+  if (adminKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  
+  try {
+    // Update the product name
+    const result = await pool.query(
+      'UPDATE products SET name = $1 WHERE name = $2',
+      ['Tamarind_Sweets', 'Tamarind_Splice']
+    );
+    
+    res.json({ 
+      message: 'Product name updated successfully',
+      updated_records: result.rowCount,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Error updating product name:', err);
+    res.status(500).json({ error: 'Database error', details: err.message });
+  }
+});
+
 // TEMPORARY: Simple diagnostic endpoint
 app.get('/admin/check-products', async (req, res) => {
   const adminKey = req.query.key;
