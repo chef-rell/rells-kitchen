@@ -29,9 +29,9 @@ class PaymentHandler {
         this.setupEventListeners();
         this.setupPayPalButtons();
         // Try to populate email and ZIP in case user data loads later
-        setTimeout(() => {
+        setTimeout(async () => {
             this.populateUserEmail();
-            this.populateUserZip();
+            await this.populateUserZip();
         }, 500);
     }
 
@@ -84,7 +84,7 @@ class PaymentHandler {
                     return;
                 }
 
-                this.renderProduct();
+                await this.renderProduct();
             } else {
                 console.error('API request failed:', {
                     productStatus: productResponse.status,
@@ -117,7 +117,7 @@ class PaymentHandler {
                 // Update auth UI after getting user data
                 this.updateAuthUI();
                 this.populateUserEmail();
-                this.populateUserZip();
+                await this.populateUserZip();
             } else {
                 console.log('User not logged in (401), continuing as guest');
                 this.currentUser = null;
@@ -198,7 +198,7 @@ class PaymentHandler {
                 this.isSubscriber = false;
                 this.subscriberDiscount = 0;
                 this.updateAuthUI();
-                this.updateTotalPrice(); // Refresh pricing without subscriber discount
+                await this.updateTotalPrice(); // Refresh pricing without subscriber discount
             }
         } catch (error) {
             console.error('Logout failed:', error);
@@ -217,7 +217,7 @@ class PaymentHandler {
         }
     }
 
-    populateUserZip() {
+    async populateUserZip() {
         const zipField = document.getElementById('shipping-zip');
         
         if (zipField && this.currentUser && this.currentUser.address_zip && this.currentUser.role !== 'guest') {
@@ -228,14 +228,18 @@ class PaymentHandler {
                 console.log('Auto-populated ZIP code for logged-in user:', this.currentUser.address_zip);
                 
                 // Auto-calculate shipping rates if valid ZIP
-                if (this.isValidZipCode(this.currentUser.address_zip)) {
-                    this.calculateShippingRates();
+                if (this.isValidZipCode(this.currentUser.address_zip) && this.selectedSubProduct) {
+                    console.log('Triggering shipping calculation for auto-populated ZIP');
+                    // Trigger the shipping calculation
+                    await this.calculateShippingRates();
+                    // Also update total price with tax calculation
+                    await this.updateTotalPrice();
                 }
             }
         }
     }
 
-    renderProduct() {
+    async renderProduct() {
         const product = this.currentProduct;
         
         // Update product display
@@ -265,7 +269,7 @@ class PaymentHandler {
             // Set initial quantity to 1
             this.quantity = 1;
             document.getElementById('quantity').value = this.quantity;
-            this.updateProductDetails();
+            await this.updateProductDetails();
             // Calculate initial shipping cost
             this.calculateShippingCost();
         }
@@ -285,7 +289,7 @@ class PaymentHandler {
         });
     }
     
-    updateProductDetails() {
+    async updateProductDetails() {
         if (!this.selectedSubProduct) return;
         
         document.getElementById('unit-price').textContent = `$${this.selectedSubProduct.price}`;
@@ -304,7 +308,7 @@ class PaymentHandler {
             quantityInput.value = this.quantity;
         }
         
-        this.updateTotalPrice();
+        await this.updateTotalPrice();
         
         // Check inventory availability
         if (!this.selectedSubProduct.inventory_count || this.selectedSubProduct.inventory_count === 0) {
@@ -319,7 +323,7 @@ class PaymentHandler {
         const sizeSelect = document.getElementById('size-select');
 
         // Size selection change
-        sizeSelect.addEventListener('change', () => {
+        sizeSelect.addEventListener('change', async () => {
             const selectedId = sizeSelect.value;
             this.selectedSubProduct = this.subProducts.find(sp => sp.id === selectedId);
             
@@ -329,7 +333,7 @@ class PaymentHandler {
                 quantityInput.value = this.quantity;
             }
             
-            this.updateProductDetails();
+            await this.updateProductDetails();
             
             // Recalculate shipping for new size
             if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
@@ -337,9 +341,9 @@ class PaymentHandler {
             }
         });
 
-        quantityInput.addEventListener('change', () => {
+        quantityInput.addEventListener('change', async () => {
             this.quantity = parseInt(quantityInput.value);
-            this.updateTotalPrice();
+            await this.updateTotalPrice();
             
             // Recalculate shipping for new quantity
             if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
@@ -347,11 +351,11 @@ class PaymentHandler {
             }
         });
 
-        decreaseBtn.addEventListener('click', () => {
+        decreaseBtn.addEventListener('click', async () => {
             if (this.quantity > 1) {
                 this.quantity--;
                 quantityInput.value = this.quantity;
-                this.updateTotalPrice();
+                await this.updateTotalPrice();
                 
                 // Recalculate shipping for new quantity
                 if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
@@ -360,12 +364,12 @@ class PaymentHandler {
             }
         });
 
-        increaseBtn.addEventListener('click', () => {
+        increaseBtn.addEventListener('click', async () => {
             const maxQty = Math.min(this.selectedSubProduct?.inventory_count || 1, 3);
             if (this.quantity < maxQty) {
                 this.quantity++;
                 quantityInput.value = this.quantity;
-                this.updateTotalPrice();
+                await this.updateTotalPrice();
                 
                 // Recalculate shipping for new quantity
                 if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
@@ -377,9 +381,9 @@ class PaymentHandler {
         // Shipping method change
         const shippingMethodSelect = document.getElementById('shipping-method');
         if (shippingMethodSelect) {
-            shippingMethodSelect.addEventListener('change', () => {
+            shippingMethodSelect.addEventListener('change', async () => {
                 this.shippingMethod = shippingMethodSelect.value;
-                this.calculateShippingCost();
+                await this.calculateShippingCost();
             });
         }
 
@@ -411,17 +415,17 @@ class PaymentHandler {
         // ZIP code input and shipping calculation
         const zipField = document.getElementById('shipping-zip');
         if (zipField) {
-            zipField.addEventListener('input', () => {
+            zipField.addEventListener('input', async () => {
                 // Clear error styling when user starts typing
                 zipField.style.borderColor = '';
                 this.shippingZip = zipField.value.trim();
                 
                 // Auto-calculate shipping when valid ZIP entered
                 if (this.isValidZipCode(this.shippingZip)) {
-                    this.calculateShippingRates();
+                    await this.calculateShippingRates();
                 } else if (this.shippingZip.length === 0) {
                     // Clear shipping options when ZIP is empty
-                    this.clearShippingOptions();
+                    await this.clearShippingOptions();
                 }
             });
 
@@ -553,12 +557,12 @@ class PaymentHandler {
             if (response.ok && data.valid) {
                 this.couponCode = data.code;
                 this.validatedCoupon = data;
-                this.updateTotalPrice();
+                await this.updateTotalPrice();
                 this.showCouponStatus(`Coupon applied! ${data.discountValue}% off`, 'success');
             } else {
                 this.couponCode = '';
                 this.validatedCoupon = null;
-                this.updateTotalPrice();
+                await this.updateTotalPrice();
                 this.showCouponStatus(data.error || 'Invalid coupon code', 'error');
             }
         } catch (error) {
@@ -1063,7 +1067,7 @@ class PaymentHandler {
         `;
     }
 
-    calculateShippingCost() {
+    async calculateShippingCost() {
         // Get shipping cost from selected option
         const shippingSelect = document.getElementById('shipping-method');
         if (shippingSelect && this.shippingMethod) {
@@ -1073,7 +1077,7 @@ class PaymentHandler {
             }
         }
         
-        this.updateTotalPrice();
+        await this.updateTotalPrice();
     }
 
     async calculateShippingRates() {
@@ -1113,7 +1117,7 @@ class PaymentHandler {
 
             if (response.ok && data.success) {
                 this.availableShippingRates = data.rates;
-                this.populateShippingOptions(data.rates, data.fallback);
+                await this.populateShippingOptions(data.rates, data.fallback);
                 
                 if (data.fallback) {
                     console.warn('Using fallback shipping rates:', data.error);
@@ -1124,13 +1128,13 @@ class PaymentHandler {
 
         } catch (error) {
             console.error('Shipping calculation failed:', error);
-            this.showShippingError();
+            await this.showShippingError();
         } finally {
             if (loadingEl) loadingEl.style.display = 'none';
         }
     }
 
-    populateShippingOptions(rates, isFallback = false) {
+    async populateShippingOptions(rates, isFallback = false) {
         const shippingSelect = document.getElementById('shipping-method');
         if (!shippingSelect) return;
 
@@ -1146,7 +1150,7 @@ class PaymentHandler {
             option.dataset.deliveryTime = rate.deliveryTime;
             
             // Select Ground Advantage by default, or first option if not available
-            if (rate.service === 'GROUND_ADVANTAGE' || (index === 1 && !rates.find(r => r.service === 'GROUND_ADVANTAGE'))) {
+            if (rate.service === 'USPS_GROUND_ADVANTAGE' || (index === 0 && !rates.find(r => r.service === 'USPS_GROUND_ADVANTAGE'))) {
                 option.selected = true;
                 this.shippingMethod = rate.service;
                 this.shippingCost = rate.cost;
@@ -1164,10 +1168,10 @@ class PaymentHandler {
             shippingSelect.insertBefore(notice, shippingSelect.firstChild);
         }
 
-        this.updateTotalPrice();
+        await this.updateTotalPrice();
     }
 
-    clearShippingOptions() {
+    async clearShippingOptions() {
         const shippingSelect = document.getElementById('shipping-method');
         if (shippingSelect) {
             shippingSelect.innerHTML = '<option value="" disabled selected>Enter ZIP code to see shipping options</option>';
@@ -1176,10 +1180,10 @@ class PaymentHandler {
         this.availableShippingRates = [];
         this.shippingMethod = '';
         this.shippingCost = 0;
-        this.updateTotalPrice();
+        await this.updateTotalPrice();
     }
 
-    showShippingError() {
+    async showShippingError() {
         const errorEl = document.getElementById('shipping-error');
         if (errorEl) {
             errorEl.style.display = 'block';
@@ -1204,7 +1208,7 @@ class PaymentHandler {
         ];
 
         this.availableShippingRates = fallbackRates;
-        this.populateShippingOptions(fallbackRates, true);
+        await this.populateShippingOptions(fallbackRates, true);
     }
 
     isValidZipCode(zip) {
