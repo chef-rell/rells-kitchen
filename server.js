@@ -1176,6 +1176,30 @@ app.post('/admin/coupon/:code/:action', async (req, res) => {
   }
 });
 
+// TEMPORARY: Simple diagnostic endpoint
+app.get('/admin/check-products', async (req, res) => {
+  const adminKey = req.query.key;
+  const validKey = 'rells-kitchen-admin-2025';
+  
+  if (adminKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  
+  try {
+    const result = await pool.query("SELECT id, name FROM products");
+    res.json({ 
+      success: true,
+      products: result.rows,
+      count: result.rows.length 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error.message,
+      database_url_exists: !!process.env.DATABASE_URL
+    });
+  }
+});
+
 // TEMPORARY: Admin endpoint to update product name (remove after use)
 app.get('/admin/update-product-name', async (req, res) => {
   const adminKey = req.query.key;
