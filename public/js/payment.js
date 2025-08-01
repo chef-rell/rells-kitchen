@@ -75,6 +75,11 @@ class PaymentHandler {
                 this.currentProduct = productData.products.find(p => p.id === productId);
                 this.subProducts = subProductData.subProducts;
                 
+                // Ensure all sub-product prices are numbers
+                this.subProducts.forEach(subProduct => {
+                    subProduct.price = parseFloat(subProduct.price);
+                });
+                
                 console.log('Found current product:', this.currentProduct);
                 console.log('Found sub-products:', this.subProducts);
                 
@@ -292,7 +297,7 @@ class PaymentHandler {
     async updateProductDetails() {
         if (!this.selectedSubProduct) return;
         
-        document.getElementById('unit-price').textContent = `$${this.selectedSubProduct.price}`;
+        document.getElementById('unit-price').textContent = `$${parseFloat(this.selectedSubProduct.price).toFixed(2)}`;
         document.getElementById('inventory-count').textContent = this.selectedSubProduct.inventory_count || 0;
         
         // Set quantity limits based on inventory only
@@ -767,7 +772,7 @@ class PaymentHandler {
                             quantity: this.quantity.toString(),
                             unit_amount: {
                                 currency_code: "USD",
-                                value: this.selectedSubProduct.price.toFixed(2)
+                                value: parseFloat(this.selectedSubProduct.price).toFixed(2)
                             }
                         }],
                         description: `${this.currentProduct.name} (${this.selectedSubProduct.size}) x${this.quantity} - Rell's Kitchen`,
