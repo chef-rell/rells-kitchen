@@ -61,34 +61,52 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Frontend**: Reverted to look for "Tamarind_Splice" to match database
 - **Next Steps**: Investigate JavaScript console logs and deployment issues
 
-### USPS Shipping Integration (2025-08-01)
-**NEW FEATURE**: Implemented USPS Web Tools API integration with caching
-- **Status**: ✅ Developed locally, ❌ NOT deployed to production
+### USPS Shipping Integration (2025-08-01) - PARTIALLY COMPLETED
+**STATUS**: USPS integration developed but DISABLED due to account authorization issues
 - **Credentials Added**: Username `76RELLS62U229`, Password `83282077QJ36LYV` 
-- **Issue**: USPS credentials rejected with "Authorization failure" - account needs activation
-- **Files Modified**:
-  - `usps-integration.js` - Added 10-minute rate caching system
-  - `server.js` - Added `/api/calculate-shipping` endpoint
-  - `.env` - Added USPS_USERNAME and USPS_PASSWORD
-- **Caching Features**:
-  - Smart cache keys: `fromZip-toZip-weight-dimensions`
-  - 10-minute TTL with automatic cleanup
-  - Handles 100+ cache entries efficiently
-  - Console logging for cache hits/misses
-- **Fallback**: Shows "Hold For Pickup - FREE" when USPS API fails
-- **Testing**: ✅ Local server (port 3001), ❌ Production deployment pending
+- **Issue**: USPS credentials rejected - account needs activation
+- **Current State**: USPS code commented out in server.js to prevent crashes
+- **Files Created**:
+  - `usps-integration.js` - Complete USPS API with 10-minute caching (ready when account activated)
+  - `tax-calculator.js` - Arkansas 3.125% tax rate system (ACTIVE)
+- **Deployment Issue**: Site crashed with USPS integration, so temporarily disabled
 - **Next Steps**: 
-  1. Activate USPS Web Tools account at https://registration.shippingapis.com/
-  2. Deploy changes to production when credentials work
-  3. Test live USPS API integration
+  1. ✅ Complete tax-only deployment (IN PROGRESS)
+  2. Activate USPS Web Tools account later
+  3. Re-enable USPS integration when account works
+
+### Tax Calculation System (2025-08-01) - IN PROGRESS
+**NEW FEATURE**: Dynamic tax calculation with Arkansas reduced rate
+- **Status**: ✅ Code complete, 🔄 Currently deploying tax-only version
+- **Arkansas Rate**: 3.125% for jams (reduced food rate)
+- **Nexus Management**: Only collects tax where legally required (AR for now)
+- **PayPal Integration**: ✅ Modified to include tax_total in breakdown
+- **API Endpoints**: 
+  - `/api/calculate-order-total` - Combined shipping/tax calculation
+  - Modified `/api/calculate-shipping` to use fallback rates (no USPS)
+- **Current Work**: Removing USPS dependency while keeping tax functionality
+- **Files Modified**: `server.js`, `public/js/payment.js`
+
+### DEPLOYMENT STATUS (2025-08-01)
+- **Issue**: Site crashed when USPS integration was deployed
+- **Solution**: Disabling USPS integration, keeping tax system
+- **Current Task**: Deploying tax-only functionality
+- **Progress**: 
+  - ✅ USPS integration commented out in server.js
+  - 🔄 Updating order calculation endpoints to work without USPS
+  - ⏳ Need to finish PayPal integration cleanup
+  - ⏳ Test and deploy tax-only version
 
 ## Known Issues / TODO
 - [x] Execute database update for product name change (reverted approach)
 - [ ] Rotate exposed PostgreSQL credentials  
 - [ ] Fix product display issue on live site
 - [ ] Plan proper product name change for later
-- [ ] **USPS**: Activate Web Tools account credentials
-- [ ] **USPS**: Deploy shipping integration to production
+- [ ] **USPS**: Activate Web Tools account credentials (Account: 76RELLS62U229)
+- [ ] **CURRENT**: Finish tax-only deployment (remove USPS dependencies)
+- [ ] **CURRENT**: Add zip-to-state mapping to tax-calculator.js 
+- [ ] **CURRENT**: Test and deploy working tax system
+- [ ] **LATER**: Re-enable USPS integration when account activated
 
 ## Commands
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)

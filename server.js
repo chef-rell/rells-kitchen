@@ -8,18 +8,18 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const USPSIntegration = require('./usps-integration');
+// const USPSIntegration = require('./usps-integration'); // Disabled until USPS account activated
 const TaxCalculator = require('./tax-calculator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Initialize USPS integration
-const uspsIntegration = new USPSIntegration(
-  process.env.USPS_USERNAME,
-  process.env.USPS_PASSWORD
-);
+// Initialize USPS integration - DISABLED until account activated
+// const uspsIntegration = new USPSIntegration(
+//   process.env.USPS_USERNAME,
+//   process.env.USPS_PASSWORD
+// );
 
 // Initialize tax calculator
 const taxCalculator = new TaxCalculator();
@@ -910,38 +910,47 @@ app.post('/api/calculate-shipping', optionalAuth, async (req, res) => {
     return res.status(400).json({ error: 'ZIP code, product size, and quantity are required' });
   }
   
-  // Validate ZIP code format
-  if (!uspsIntegration.isValidZipCode(zipCode)) {
+  // Basic ZIP code validation (since USPS integration is disabled)
+  if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
     return res.status(400).json({ error: 'Invalid ZIP code format' });
   }
   
   try {
-    // Shipping origin (your business location)
-    const fromZip = '72120'; // North Little Rock, AR
+    // Use fallback shipping rates since USPS is disabled
+    const fallbackRates = [
+      {
+        service: 'PICKUP',
+        name: 'Hold For Pickup',
+        cost: 0,
+        deliveryTime: 'Hold for pickup',
+        description: 'UPS or USPS Post Office (Hold For Pickup) - FREE'
+      },
+      {
+        service: 'STANDARD',
+        name: 'Standard Shipping',
+        cost: 12.50,
+        deliveryTime: '3-5 business days',
+        description: 'Standard Shipping (3-5 business days) - $12.50'
+      },
+      {
+        service: 'EXPEDITED',
+        name: 'Expedited Shipping',
+        cost: 25.00,
+        deliveryTime: '1-2 business days',
+        description: 'Expedited Shipping (1-2 business days) - $25.00'
+      }
+    ];
     
-    // Calculate package weight and dimensions
-    const weight = uspsIntegration.calculatePackageWeight(productSize, quantity);
-    const dimensions = uspsIntegration.getPackageDimensions(productSize, quantity);
-    
-    console.log('Calculated shipping parameters:', { weight, dimensions, fromZip, toZip: zipCode });
-    
-    // Get USPS rates
-    const shippingRates = await uspsIntegration.calculateShippingRates(
-      fromZip, 
-      zipCode, 
-      weight, 
-      dimensions
-    );
-    
-    console.log('USPS shipping rates calculated:', shippingRates);
+    console.log('Using fallback shipping rates (USPS disabled)');
     
     res.json({ 
       success: true,
-      rates: shippingRates,
+      rates: fallbackRates,
       packageInfo: {
-        weight: weight,
-        dimensions: dimensions
-      }
+        weight: 'N/A',
+        dimensions: 'N/A'
+      },
+      note: 'USPS integration disabled - using standard rates'
     });
     
   } catch (error) {
@@ -1000,8 +1009,8 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
     return res.status(400).json({ error: 'ZIP code, product size, quantity, and product price are required' });
   }
   
-  // Validate ZIP code format
-  if (!uspsIntegration.isValidZipCode(zipCode)) {
+  // Basic ZIP code validation (since USPS integration is disabled)
+  if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
     return res.status(400).json({ error: 'Invalid ZIP code format' });
   }
   
@@ -1009,29 +1018,20 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
     // Calculate subtotal
     const subtotal = productPrice * quantity;
     
-    // Get shipping rates
-    const fromZip = '72120'; // North Little Rock, AR
-    const weight = uspsIntegration.calculatePackageWeight(productSize, quantity);
-    const dimensions = uspsIntegration.getPackageDimensions(productSize, quantity);
-    
-    let shippingRates = [];
-    try {
-      shippingRates = await uspsIntegration.calculateShippingRates(fromZip, zipCode, weight, dimensions);
-    } catch (shippingError) {
-      console.warn('Shipping calculation failed, using fallback rates:', shippingError.message);
-      shippingRates = [
-        { service: 'PICKUP', name: 'Hold For Pickup', cost: 0, deliveryTime: 'Hold for pickup', description: 'Hold For Pickup - FREE' },
-        { service: 'GROUND_ADVANTAGE', name: 'Ground Advantage', cost: 12.50, deliveryTime: '3-5 business days', description: 'Ground Advantage (3-5 business days) - $12.50' }
-      ];
-    }
+    // Use standard shipping rates (USPS disabled)
+    const shippingRates = [
+      { service: 'PICKUP', name: 'Hold For Pickup', cost: 0, deliveryTime: 'Hold for pickup', description: 'Hold For Pickup - FREE' },
+      { service: 'STANDARD', name: 'Standard Shipping', cost: 12.50, deliveryTime: '3-5 business days', description: 'Standard Shipping (3-5 business days) - $12.50' },
+      { service: 'EXPEDITED', name: 'Expedited Shipping', cost: 25.00, deliveryTime: '1-2 business days', description: 'Expedited Shipping (1-2 business days) - $25.00' }
+    ];
     
     // Calculate tax based on address or zip code
     let shippingAddress = address;
     if (!shippingAddress && zipCode) {
-      // Extract state from zip code if possible, or use a basic lookup
+      // Extract state from zip code using tax calculator
       shippingAddress = { 
         zip: zipCode,
-        state: uspsIntegration.getStateFromZip ? uspsIntegration.getStateFromZip(zipCode) : null
+        state: taxCalculator.getStateFromZip(zipCode)
       };
     }
     
@@ -1062,7 +1062,7 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
       subtotal: subtotal,
       tax: taxCalculation,
       shippingOptions: orderOptions,
-      packageInfo: { weight, dimensions }
+      packageInfo: { note: 'USPS integration disabled - using standard shipping rates' }
     });
     
   } catch (error) {

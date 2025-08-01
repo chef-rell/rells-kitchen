@@ -124,6 +124,52 @@ class TaxCalculator {
         this.taxRates[stateCode] = rate;
         console.log(`Updated tax rate for ${stateCode}: ${(rate * 100).toFixed(3)}%`);
     }
+
+    // Basic zip code to state mapping for tax calculation
+    getStateFromZip(zipCode) {
+        const zip = zipCode.toString();
+        
+        // Arkansas zip codes (where you have nexus)
+        if (zip.match(/^7[12]/)) return 'AR';
+        
+        // Basic zip code ranges for major states
+        const zipRanges = {
+            'AL': [35000, 36999],
+            'AZ': [85000, 86999],
+            'CA': [90000, 96699],
+            'CO': [80000, 81999],
+            'CT': [6000, 6999],
+            'FL': [32000, 34999],
+            'GA': [30000, 31999],
+            'IL': [60000, 62999],
+            'IN': [46000, 47999],
+            'KS': [66000, 67999],
+            'LA': [70000, 71999],
+            'MA': [1000, 2799],
+            'MO': [63000, 65999],
+            'MS': [38000, 39999],
+            'NC': [27000, 28999],
+            'NY': [10000, 14999],
+            'OH': [43000, 45999],
+            'OK': [73000, 74999],
+            'SC': [29000, 29999],
+            'TN': [37000, 38599],
+            'TX': [75000, 79999],
+            'VA': [20000, 24699],
+            'WA': [98000, 99499],
+            'WV': [24700, 26999],
+            'WI': [53000, 54999]
+        };
+
+        const zipNum = parseInt(zip);
+        for (const [state, [min, max]] of Object.entries(zipRanges)) {
+            if (zipNum >= min && zipNum <= max) {
+                return state;
+            }
+        }
+
+        return null; // Unknown state
+    }
 }
 
 module.exports = TaxCalculator;
