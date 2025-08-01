@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-btn { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .result { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin: 10px 0; }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>Live USPS API Test</h1>
+    
+    <button class="test-btn" onclick="testLiveShipping()">Test Live Shipping API</button>
+    <button class="test-btn" onclick="clearCache()">Clear Browser Cache</button>
+    
+    <div id="result" class="result" style="display:none;"></div>
+
+    <script>
+        async function testLiveShipping() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '🔄 Testing live API...';
+            
+            try {
+                console.log('Making request to:', window.location.origin + '/api/calculate-shipping');
+                
+                const response = await fetch('/api/calculate-shipping', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    },
+                    body: JSON.stringify({
+                        zipCode: '10001',
+                        productSize: 'medium',
+                        quantity: 2
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    
+                    let hasPickup = data.rates.some(rate => rate.service === 'PICKUP' || rate.name.includes('Pickup'));
+                    let statusMsg = hasPickup ? '❌ STILL HAS PICKUP OPTION' : '✅ PICKUP OPTION REMOVED';
+                    
+                    resultDiv.innerHTML = `
+                        <h3>${statusMsg}</h3>
+                        <p><strong>API Status:</strong> ${response.status} OK</p>
+                        <p><strong>Number of shipping options:</strong> ${data.rates.length}</p>
+                        <p><strong>Shipping Options:</strong></p>
+                        <ul>
+                            ${data.rates.map(rate => `<li><strong>${rate.name}</strong>: $${rate.cost} (${rate.deliveryTime})</li>`).join('')}
+                        </ul>
+                        <details>
+                            <summary>Full API Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <h3>❌ API ERROR</h3>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${data.error || 'Unknown error'}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Request failed:', error);
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ REQUEST FAILED</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Check browser console for more details.</p>
+                `;
+            }
+        }
+        
+        function clearCache() {
+            // Force reload without cache
+            window.location.reload(true);
+        }
+        
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testLiveShipping, 1000);
+        });
+    </script>
+</body>
+</html>
