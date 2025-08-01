@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(npm audit:*)",
@@ -27,7 +28,11 @@
       "Bash(git rm:*)",
       "Bash(rm:*)",
       "Bash(git filter-branch:*)",
-      "WebFetch(domain:www.rellskitchen.com)"
+      "WebFetch(domain:www.rellskitchen.com)",
+      "Bash(start /b:*)",
+      "WebFetch(domain:rells-kitchen-production.up.railway.app)",
+      "WebFetch(domain:developer.usps.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

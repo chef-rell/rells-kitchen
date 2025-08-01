@@ -414,7 +414,7 @@ class PaymentHandler {
 
     }
 
-    updateTotalPrice() {
+    async updateTotalPrice() {
         if (!this.selectedSubProduct) return;
         
         const subtotal = (this.selectedSubProduct.price * this.quantity).toFixed(2);
@@ -427,11 +427,53 @@ class PaymentHandler {
             this.subscriberDiscount = subscriberDiscountAmount;
         }
         
-        const total = (parseFloat(subtotal) + this.shippingCost - couponDiscountAmount - subscriberDiscountAmount).toFixed(2);
+        // Get tax information if ZIP code is available
+        let taxAmount = 0;
+        let taxLabel = 'Tax:';
+        const zipField = document.getElementById('shipping-zip');
+        const shippingZip = zipField ? zipField.value.trim() : '';
+        
+        if (shippingZip && this.isValidZipCode(shippingZip)) {
+            try {
+                const taxResponse = await fetch('/api/calculate-order-total', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        zipCode: shippingZip,
+                        productSize: this.selectedSubProduct.size.toLowerCase(),
+                        quantity: this.quantity,
+                        productPrice: this.selectedSubProduct.price
+                    })
+                });
+                
+                if (taxResponse.ok) {
+                    const taxData = await taxResponse.json();
+                    taxAmount = taxData.tax.taxAmount || 0;
+                    if (taxAmount > 0) {
+                        taxLabel = `Tax (${taxData.tax.reason}):`;
+                    }
+                }
+            } catch (error) {
+                console.warn('Tax calculation failed:', error);
+            }
+        }
+        
+        const total = (parseFloat(subtotal) + this.shippingCost + taxAmount - couponDiscountAmount - subscriberDiscountAmount).toFixed(2);
         
         document.getElementById('display-quantity').textContent = this.quantity;
         document.getElementById('subtotal-price').textContent = `$${subtotal}`;
         document.getElementById('shipping-cost').textContent = this.shippingCost > 0 ? `$${this.shippingCost.toFixed(2)}` : 'FREE';
+        
+        // Update tax display
+        if (taxAmount > 0) {
+            document.getElementById('tax-line').style.display = 'flex';
+            document.getElementById('tax-label').textContent = taxLabel;
+            document.getElementById('tax-amount').textContent = `$${taxAmount.toFixed(2)}`;
+        } else {
+            document.getElementById('tax-line').style.display = 'none';
+        }
         
         // Update subscriber discount display
         if (this.isSubscriber && subscriberDiscountAmount > 0) {
