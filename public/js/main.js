@@ -275,7 +275,7 @@ class RellsKitchen {
         menuGrid.innerHTML = this.products.map(product => {
             // Add images for specific products
             let productImage = '';
-            if (product.name === 'Tamarind_Sweets') {
+            if (product.name === 'Tamarind_Splice') {
                 productImage = `<div class="product-image">
                     <img src="/images/tamarind_stew.webp" alt="${product.name}" loading="lazy">
                 </div>`;

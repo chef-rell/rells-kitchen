@@ -220,7 +220,7 @@ class PaymentHandler {
         
         // Set product image based on product name
         const productImageEl = document.getElementById('product-image');
-        if (product.name === 'Tamarind_Sweets') {
+        if (product.name === 'Tamarind_Splice') {
             productImageEl.src = '/images/tamarind_stew.webp';
             productImageEl.alt = product.name;
             productImageEl.style.display = 'block';
