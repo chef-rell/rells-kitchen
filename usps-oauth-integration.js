@@ -20,10 +20,10 @@ class USPSOAuthIntegration {
         this.cacheTTL = 10 * 60 * 1000; // 10 minutes
     }
 
-    // Generate cache key for shipping rates
+    // Generate cache key for shipping rates (fixed 6x6x6 dimensions)
     generateCacheKey(fromZip, toZip, weight, dimensions) {
-        const dimStr = dimensions ? `${dimensions.width}x${dimensions.length}x${dimensions.height}` : 'nodim';
-        return `${fromZip}-${toZip}-${weight}-${dimStr}`;
+        // Always use 6x6x6 dimensions for caching
+        return `${fromZip}-${toZip}-${weight}-6x6x6`;
     }
 
     // Check if cached rate is still valid
@@ -145,14 +145,14 @@ class USPSOAuthIntegration {
             const pounds = Math.floor(weight);
             const ounces = Math.round((weight - pounds) * 16);
             
-            // Prepare pricing request
+            // Prepare pricing request with fixed 6x6x6 dimensions
             const pricingData = {
                 "originZIPCode": fromZip,
                 "destinationZIPCode": toZip,
                 "weight": weight,
-                "length": dimensions?.length || 10,
-                "width": dimensions?.width || 8,
-                "height": dimensions?.height || 5,
+                "length": 6,
+                "width": 6,
+                "height": 6,
                 "mailClass": "USPS_GROUND_ADVANTAGE", // Start with Ground Advantage
                 "processingCategory": "MACHINABLE",
                 "rateIndicator": "SP", // Single Piece
@@ -293,16 +293,10 @@ class USPSOAuthIntegration {
         return baseWeight * quantity + 0.5; // Add packaging weight
     }
 
-    // Get package dimensions based on quantity
+    // Get package dimensions - always 6x6x6 for all products
     getPackageDimensions(productSize, quantity) {
-        // Adjust box size based on quantity
-        if (quantity === 1) {
-            return { width: 6, length: 9, height: 4 }; // Small box
-        } else if (quantity === 2) {
-            return { width: 8, length: 10, height: 5 }; // Medium box
-        } else {
-            return { width: 10, length: 12, height: 6 }; // Large box
-        }
+        // Fixed dimensions for all packages
+        return { width: 6, length: 6, height: 6 };
     }
 
     // Basic zip code to state mapping for tax calculation

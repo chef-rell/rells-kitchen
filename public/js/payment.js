@@ -28,8 +28,11 @@ class PaymentHandler {
         this.updateAuthUI();
         this.setupEventListeners();
         this.setupPayPalButtons();
-        // Try to populate email in case user data loads later
-        setTimeout(() => this.populateUserEmail(), 500);
+        // Try to populate email and ZIP in case user data loads later
+        setTimeout(() => {
+            this.populateUserEmail();
+            this.populateUserZip();
+        }, 500);
     }
 
     loadProductFromURL() {
@@ -114,6 +117,7 @@ class PaymentHandler {
                 // Update auth UI after getting user data
                 this.updateAuthUI();
                 this.populateUserEmail();
+                this.populateUserZip();
             } else {
                 console.log('User not logged in (401), continuing as guest');
                 this.currentUser = null;
@@ -209,6 +213,24 @@ class PaymentHandler {
             if (!emailField.value.trim()) {
                 emailField.value = this.currentUser.email;
                 console.log('Auto-populated email for logged-in user:', this.currentUser.email);
+            }
+        }
+    }
+
+    populateUserZip() {
+        const zipField = document.getElementById('shipping-zip');
+        
+        if (zipField && this.currentUser && this.currentUser.address_zip && this.currentUser.role !== 'guest') {
+            // Only populate if the field is empty to avoid overwriting user input
+            if (!zipField.value.trim()) {
+                zipField.value = this.currentUser.address_zip;
+                this.shippingZip = this.currentUser.address_zip;
+                console.log('Auto-populated ZIP code for logged-in user:', this.currentUser.address_zip);
+                
+                // Auto-calculate shipping rates if valid ZIP
+                if (this.isValidZipCode(this.currentUser.address_zip)) {
+                    this.calculateShippingRates();
+                }
             }
         }
     }
