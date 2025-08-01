@@ -50,7 +50,15 @@ app.use(cookieParser());
 // Serve static files with proper caching headers
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
-  etag: false
+  etag: false,
+  setHeaders: (res, path) => {
+    // Prevent caching of JavaScript files to ensure updates are loaded
+    if (path.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
 }));
 
 const limiter = rateLimit({
