@@ -781,12 +781,13 @@ class PaymentHandler {
                 };
 
                 // Verify the math before sending to PayPal
-                const calculatedTotal = subtotal + shippingCost - totalDiscountAmount;
+                const calculatedTotal = subtotal + shippingCost + taxAmount - totalDiscountAmount;
                 const expectedTotal = parseFloat(total.toFixed(2));
                 
                 console.log('PayPal math verification:', {
                     subtotal: subtotal,
                     shippingCost: shippingCost,
+                    taxAmount: taxAmount,
                     couponDiscountAmount: couponDiscountAmount,
                     subscriberDiscountAmount: subscriberDiscountAmount,
                     totalDiscountAmount: totalDiscountAmount,
