@@ -8,10 +8,21 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const USPSIntegration = require('./usps-integration');
+const TaxCalculator = require('./tax-calculator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Initialize USPS integration
+const uspsIntegration = new USPSIntegration(
+  process.env.USPS_USERNAME,
+  process.env.USPS_PASSWORD
+);
+
+// Initialize tax calculator
+const taxCalculator = new TaxCalculator();
 
 // Trust proxy when behind Railway/Heroku/etc reverse proxy
 app.set('trust proxy', 1);
@@ -887,6 +898,180 @@ app.get('/payment.html', (req, res) => {
 
 app.get('/test-registration.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'test-registration.html'));
+});
+
+// Calculate shipping rates
+app.post('/api/calculate-shipping', optionalAuth, async (req, res) => {
+  const { zipCode, productSize, quantity } = req.body;
+  
+  console.log('Shipping calculation request:', { zipCode, productSize, quantity });
+  
+  if (!zipCode || !productSize || !quantity) {
+    return res.status(400).json({ error: 'ZIP code, product size, and quantity are required' });
+  }
+  
+  // Validate ZIP code format
+  if (!uspsIntegration.isValidZipCode(zipCode)) {
+    return res.status(400).json({ error: 'Invalid ZIP code format' });
+  }
+  
+  try {
+    // Shipping origin (your business location)
+    const fromZip = '72120'; // North Little Rock, AR
+    
+    // Calculate package weight and dimensions
+    const weight = uspsIntegration.calculatePackageWeight(productSize, quantity);
+    const dimensions = uspsIntegration.getPackageDimensions(productSize, quantity);
+    
+    console.log('Calculated shipping parameters:', { weight, dimensions, fromZip, toZip: zipCode });
+    
+    // Get USPS rates
+    const shippingRates = await uspsIntegration.calculateShippingRates(
+      fromZip, 
+      zipCode, 
+      weight, 
+      dimensions
+    );
+    
+    console.log('USPS shipping rates calculated:', shippingRates);
+    
+    res.json({ 
+      success: true,
+      rates: shippingRates,
+      packageInfo: {
+        weight: weight,
+        dimensions: dimensions
+      }
+    });
+    
+  } catch (error) {
+    console.error('Shipping calculation error:', error);
+    
+    // Fallback to static rates if USPS API fails
+    const fallbackRates = [
+      {
+        service: 'PICKUP',
+        name: 'Hold For Pickup',
+        cost: 0,
+        deliveryTime: 'Hold for pickup',
+        description: 'UPS or USPS Post Office (Hold For Pickup) - FREE'
+      },
+      {
+        service: 'GROUND_ADVANTAGE',
+        name: 'Ground Advantage',
+        cost: 9.95,
+        deliveryTime: '2-5 business days',
+        description: 'Ground Advantage (2-5 business days) - $9.95'
+      },
+      {
+        service: 'PRIORITY_MAIL',
+        name: 'Priority Mail',
+        cost: 18.50,
+        deliveryTime: '1-3 business days',
+        description: 'Priority Mail (1-3 business days) - $18.50'
+      },
+      {
+        service: 'PRIORITY_MAIL_EXPRESS',
+        name: 'Priority Express',
+        cost: 49.95,
+        deliveryTime: '1-2 business days',
+        description: 'Priority Express (1-2 business days) - $49.95'
+      }
+    ];
+    
+    console.log('Using fallback shipping rates due to API error');
+    
+    res.json({ 
+      success: true,
+      rates: fallbackRates,
+      fallback: true,
+      error: 'Live rates unavailable, using standard rates'
+    });
+  }
+});
+
+// Calculate shipping rates and tax for a complete order preview
+app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
+  const { zipCode, productSize, quantity, productPrice, address } = req.body;
+  
+  console.log('Order total calculation request:', { zipCode, productSize, quantity, productPrice, address });
+  
+  if (!zipCode || !productSize || !quantity || !productPrice) {
+    return res.status(400).json({ error: 'ZIP code, product size, quantity, and product price are required' });
+  }
+  
+  // Validate ZIP code format
+  if (!uspsIntegration.isValidZipCode(zipCode)) {
+    return res.status(400).json({ error: 'Invalid ZIP code format' });
+  }
+  
+  try {
+    // Calculate subtotal
+    const subtotal = productPrice * quantity;
+    
+    // Get shipping rates
+    const fromZip = '72120'; // North Little Rock, AR
+    const weight = uspsIntegration.calculatePackageWeight(productSize, quantity);
+    const dimensions = uspsIntegration.getPackageDimensions(productSize, quantity);
+    
+    let shippingRates = [];
+    try {
+      shippingRates = await uspsIntegration.calculateShippingRates(fromZip, zipCode, weight, dimensions);
+    } catch (shippingError) {
+      console.warn('Shipping calculation failed, using fallback rates:', shippingError.message);
+      shippingRates = [
+        { service: 'PICKUP', name: 'Hold For Pickup', cost: 0, deliveryTime: 'Hold for pickup', description: 'Hold For Pickup - FREE' },
+        { service: 'GROUND_ADVANTAGE', name: 'Ground Advantage', cost: 12.50, deliveryTime: '3-5 business days', description: 'Ground Advantage (3-5 business days) - $12.50' }
+      ];
+    }
+    
+    // Calculate tax based on address or zip code
+    let shippingAddress = address;
+    if (!shippingAddress && zipCode) {
+      // Extract state from zip code if possible, or use a basic lookup
+      shippingAddress = { 
+        zip: zipCode,
+        state: uspsIntegration.getStateFromZip ? uspsIntegration.getStateFromZip(zipCode) : null
+      };
+    }
+    
+    const taxCalculation = taxCalculator.calculateTax(subtotal, shippingAddress);
+    
+    // Calculate totals for each shipping option
+    const orderOptions = shippingRates.map(rate => {
+      const shippingCost = rate.cost;
+      const taxAmount = taxCalculation.taxAmount;
+      const total = subtotal + shippingCost + taxAmount;
+      
+      return {
+        shippingService: rate.service,
+        shippingName: rate.name,
+        shippingCost: shippingCost,
+        shippingDescription: rate.description,
+        deliveryTime: rate.deliveryTime,
+        subtotal: subtotal,
+        taxAmount: taxAmount,
+        taxRate: taxCalculation.taxRate,
+        taxReason: taxCalculation.reason,
+        total: parseFloat(total.toFixed(2))
+      };
+    });
+    
+    res.json({
+      success: true,
+      subtotal: subtotal,
+      tax: taxCalculation,
+      shippingOptions: orderOptions,
+      packageInfo: { weight, dimensions }
+    });
+    
+  } catch (error) {
+    console.error('Order total calculation error:', error);
+    res.status(500).json({ 
+      error: 'Unable to calculate order total',
+      details: error.message 
+    });
+  }
 });
 
 app.post('/api/process-payment', optionalAuth, async (req, res) => {

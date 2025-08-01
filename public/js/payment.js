@@ -5,7 +5,9 @@ class PaymentHandler {
         this.selectedSubProduct = null;
         this.quantity = 1;
         this.shippingCost = 0;
-        this.shippingMethod = 'usps-ground';
+        this.shippingMethod = '';
+        this.availableShippingRates = [];
+        this.shippingZip = '';
         this.couponCode = '';
         this.couponDiscount = 0;
         this.validatedCoupon = null;
@@ -306,11 +308,21 @@ class PaymentHandler {
             }
             
             this.updateProductDetails();
+            
+            // Recalculate shipping for new size
+            if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
+                this.calculateShippingRates();
+            }
         });
 
         quantityInput.addEventListener('change', () => {
             this.quantity = parseInt(quantityInput.value);
             this.updateTotalPrice();
+            
+            // Recalculate shipping for new quantity
+            if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
+                this.calculateShippingRates();
+            }
         });
 
         decreaseBtn.addEventListener('click', () => {
@@ -318,6 +330,11 @@ class PaymentHandler {
                 this.quantity--;
                 quantityInput.value = this.quantity;
                 this.updateTotalPrice();
+                
+                // Recalculate shipping for new quantity
+                if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
+                    this.calculateShippingRates();
+                }
             }
         });
 
@@ -327,6 +344,11 @@ class PaymentHandler {
                 this.quantity++;
                 quantityInput.value = this.quantity;
                 this.updateTotalPrice();
+                
+                // Recalculate shipping for new quantity
+                if (this.shippingZip && this.isValidZipCode(this.shippingZip)) {
+                    this.calculateShippingRates();
+                }
             }
         });
 
@@ -361,6 +383,32 @@ class PaymentHandler {
             emailField.addEventListener('input', () => {
                 // Clear error styling when user starts typing
                 emailField.style.borderColor = '';
+            });
+        }
+
+        // ZIP code input and shipping calculation
+        const zipField = document.getElementById('shipping-zip');
+        if (zipField) {
+            zipField.addEventListener('input', () => {
+                // Clear error styling when user starts typing
+                zipField.style.borderColor = '';
+                this.shippingZip = zipField.value.trim();
+                
+                // Auto-calculate shipping when valid ZIP entered
+                if (this.isValidZipCode(this.shippingZip)) {
+                    this.calculateShippingRates();
+                } else if (this.shippingZip.length === 0) {
+                    // Clear shipping options when ZIP is empty
+                    this.clearShippingOptions();
+                }
+            });
+
+            zipField.addEventListener('blur', () => {
+                // Validate ZIP code format on blur
+                if (this.shippingZip && !this.isValidZipCode(this.shippingZip)) {
+                    zipField.style.borderColor = 'var(--error-red)';
+                    this.showNotification('Please enter a valid 5-digit ZIP code', 'error');
+                }
             });
         }
 
@@ -505,12 +553,15 @@ class PaymentHandler {
                 shape: 'rect',
                 label: 'paypal'
             },
-            createOrder: (data, actions) => {
+            createOrder: async (data, actions) => {
                 const emailField = document.getElementById('customer-email');
+                const zipField = document.getElementById('shipping-zip');
                 const customerEmail = emailField.value.trim();
+                const shippingZip = zipField.value.trim();
                 
                 // Clear any previous error styling
                 emailField.style.borderColor = '';
+                zipField.style.borderColor = '';
                 
                 if (!customerEmail) {
                     this.showNotification('Please enter your email address before proceeding.', 'error');
@@ -528,18 +579,67 @@ class PaymentHandler {
                     return Promise.reject(new Error('Invalid email address'));
                 }
 
+                if (!shippingZip) {
+                    this.showNotification('Please enter your ZIP code before proceeding.', 'error');
+                    zipField.style.borderColor = 'var(--error-red)';
+                    zipField.focus();
+                    return Promise.reject(new Error('Missing ZIP code'));
+                }
+
+                if (!this.isValidZipCode(shippingZip)) {
+                    this.showNotification('Please enter a valid 5-digit ZIP code.', 'error');
+                    zipField.style.borderColor = 'var(--error-red)';
+                    zipField.focus();
+                    return Promise.reject(new Error('Invalid ZIP code'));
+                }
+
+                if (!this.shippingMethod || this.availableShippingRates.length === 0) {
+                    this.showNotification('Please wait for shipping options to load or refresh the page.', 'error');
+                    return Promise.reject(new Error('No shipping method selected'));
+                }
+
                 if (!this.selectedSubProduct) {
                     this.showNotification('Please select a size before proceeding.', 'error');
                     return Promise.reject(new Error('No product selected'));
                 }
 
-                // Create order with base shipping cost, coupon discount, and subscriber discount
+                // Calculate tax for the order using server-side tax calculator
                 const subtotal = parseFloat((this.selectedSubProduct.price * this.quantity).toFixed(2));
                 const couponDiscountAmount = parseFloat(this.calculateCouponDiscount(subtotal).toFixed(2));
                 const subscriberDiscountAmount = this.isSubscriber ? parseFloat((subtotal * 0.10).toFixed(2)) : 0;
                 const totalDiscountAmount = couponDiscountAmount + subscriberDiscountAmount;
                 const shippingCost = parseFloat(this.shippingCost.toFixed(2));
-                const total = parseFloat((subtotal + shippingCost - totalDiscountAmount).toFixed(2));
+                
+                // Get tax information from server
+                let taxAmount = 0;
+                let taxRate = 0;
+                try {
+                    const taxResponse = await fetch('/api/calculate-order-total', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            zipCode: shippingZip,
+                            productSize: this.selectedSubProduct.size.toLowerCase(),
+                            quantity: this.quantity,
+                            productPrice: this.selectedSubProduct.price
+                        })
+                    });
+                    
+                    if (taxResponse.ok) {
+                        const taxData = await taxResponse.json();
+                        taxAmount = taxData.tax.taxAmount || 0;
+                        taxRate = taxData.tax.taxRate || 0;
+                        console.log('Tax calculation:', taxData.tax);
+                    } else {
+                        console.warn('Tax calculation failed, proceeding without tax');
+                    }
+                } catch (error) {
+                    console.warn('Tax calculation error:', error);
+                }
+                
+                const total = parseFloat((subtotal + shippingCost + taxAmount - totalDiscountAmount).toFixed(2));
 
                 // Ensure total is positive
                 if (parseFloat(total) <= 0) {
@@ -553,6 +653,8 @@ class PaymentHandler {
                     subscriberDiscountAmount: subscriberDiscountAmount,
                     totalDiscountAmount: totalDiscountAmount,
                     shippingCost: this.shippingCost,
+                    taxAmount: taxAmount,
+                    taxRate: taxRate,
                     total: total,
                     productName: this.currentProduct.name,
                     productSize: this.selectedSubProduct.size,
@@ -569,6 +671,14 @@ class PaymentHandler {
                         value: shippingCost.toFixed(2)
                     }
                 };
+
+                // Add tax to breakdown if applicable
+                if (taxAmount > 0) {
+                    breakdown.tax_total = {
+                        currency_code: "USD",
+                        value: taxAmount.toFixed(2)
+                    };
+                }
 
                 // Add discount to breakdown if any discounts are applied
                 if (totalDiscountAmount > 0) {
@@ -890,21 +1000,158 @@ class PaymentHandler {
     }
 
     calculateShippingCost() {
-        // Get base shipping method cost
+        // Get shipping cost from selected option
         const shippingSelect = document.getElementById('shipping-method');
-        if (shippingSelect) {
-            const selectedOption = shippingSelect.querySelector(`option[value="${this.shippingMethod}"]`);
-            if (selectedOption) {
-                this.shippingCost = parseFloat(selectedOption.dataset.cost) || 0;
+        if (shippingSelect && this.shippingMethod) {
+            const selectedRate = this.availableShippingRates.find(rate => rate.service === this.shippingMethod);
+            if (selectedRate) {
+                this.shippingCost = selectedRate.cost;
             }
-        }
-
-        // If pickup method, no shipping costs
-        if (this.shippingMethod === 'pickup') {
-            this.shippingCost = 0;
         }
         
         this.updateTotalPrice();
+    }
+
+    async calculateShippingRates() {
+        if (!this.selectedSubProduct || !this.shippingZip) {
+            return;
+        }
+
+        console.log('Calculating shipping rates for:', {
+            zip: this.shippingZip,
+            productSize: this.selectedSubProduct.size,
+            quantity: this.quantity
+        });
+
+        const loadingEl = document.getElementById('shipping-loading');
+        const errorEl = document.getElementById('shipping-error');
+        const shippingSelect = document.getElementById('shipping-method');
+
+        // Show loading state
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (errorEl) errorEl.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/calculate-shipping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    zipCode: this.shippingZip,
+                    productSize: this.selectedSubProduct.size,
+                    quantity: this.quantity
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.availableShippingRates = data.rates;
+                this.populateShippingOptions(data.rates, data.fallback);
+                
+                if (data.fallback) {
+                    console.warn('Using fallback shipping rates:', data.error);
+                }
+            } else {
+                throw new Error(data.error || 'Failed to calculate shipping rates');
+            }
+
+        } catch (error) {
+            console.error('Shipping calculation failed:', error);
+            this.showShippingError();
+        } finally {
+            if (loadingEl) loadingEl.style.display = 'none';
+        }
+    }
+
+    populateShippingOptions(rates, isFallback = false) {
+        const shippingSelect = document.getElementById('shipping-method');
+        if (!shippingSelect) return;
+
+        // Clear existing options
+        shippingSelect.innerHTML = '';
+
+        // Add shipping options
+        rates.forEach((rate, index) => {
+            const option = document.createElement('option');
+            option.value = rate.service;
+            option.textContent = `${rate.description} - ${rate.cost > 0 ? '$' + rate.cost.toFixed(2) : 'FREE'}`;
+            option.dataset.cost = rate.cost;
+            option.dataset.deliveryTime = rate.deliveryTime;
+            
+            // Select Ground Advantage by default, or first option if not available
+            if (rate.service === 'GROUND_ADVANTAGE' || (index === 1 && !rates.find(r => r.service === 'GROUND_ADVANTAGE'))) {
+                option.selected = true;
+                this.shippingMethod = rate.service;
+                this.shippingCost = rate.cost;
+            }
+            
+            shippingSelect.appendChild(option);
+        });
+
+        // Add fallback notice if using fallback rates
+        if (isFallback) {
+            const notice = document.createElement('option');
+            notice.disabled = true;
+            notice.textContent = '--- Live rates unavailable, using standard rates ---';
+            notice.style.fontStyle = 'italic';
+            shippingSelect.insertBefore(notice, shippingSelect.firstChild);
+        }
+
+        this.updateTotalPrice();
+    }
+
+    clearShippingOptions() {
+        const shippingSelect = document.getElementById('shipping-method');
+        if (shippingSelect) {
+            shippingSelect.innerHTML = '<option value="" disabled selected>Enter ZIP code to see shipping options</option>';
+        }
+        
+        this.availableShippingRates = [];
+        this.shippingMethod = '';
+        this.shippingCost = 0;
+        this.updateTotalPrice();
+    }
+
+    showShippingError() {
+        const errorEl = document.getElementById('shipping-error');
+        if (errorEl) {
+            errorEl.style.display = 'block';
+        }
+
+        // Show fallback options
+        const fallbackRates = [
+            {
+                service: 'PICKUP',
+                name: 'Hold For Pickup',
+                cost: 0,
+                deliveryTime: 'Hold for pickup',
+                description: 'UPS or USPS Post Office (Hold For Pickup) - FREE'
+            },
+            {
+                service: 'GROUND_ADVANTAGE',
+                name: 'Ground Advantage',
+                cost: 9.95,
+                deliveryTime: '2-5 business days',
+                description: 'Ground Advantage (2-5 business days) - $9.95'
+            },
+            {
+                service: 'PRIORITY_MAIL',
+                name: 'Priority Mail',
+                cost: 18.50,
+                deliveryTime: '1-3 business days',
+                description: 'Priority Mail (1-3 business days) - $18.50'
+            }
+        ];
+
+        this.availableShippingRates = fallbackRates;
+        this.populateShippingOptions(fallbackRates, true);
+    }
+
+    isValidZipCode(zip) {
+        return /^\d{5}(-\d{4})?$/.test(zip);
     }
     
     calculateFinalShippingCost(shippingAddress) {

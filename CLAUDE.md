@@ -61,12 +61,36 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Frontend**: Reverted to look for "Tamarind_Splice" to match database
 - **Next Steps**: Investigate JavaScript console logs and deployment issues
 
+### USPS Shipping Integration (2025-08-01)
+**NEW FEATURE**: Implemented USPS Web Tools API integration with caching
+- **Status**: ✅ Developed locally, ❌ NOT deployed to production
+- **Credentials Added**: Username `76RELLS62U229`, Password `83282077QJ36LYV` 
+- **Issue**: USPS credentials rejected with "Authorization failure" - account needs activation
+- **Files Modified**:
+  - `usps-integration.js` - Added 10-minute rate caching system
+  - `server.js` - Added `/api/calculate-shipping` endpoint
+  - `.env` - Added USPS_USERNAME and USPS_PASSWORD
+- **Caching Features**:
+  - Smart cache keys: `fromZip-toZip-weight-dimensions`
+  - 10-minute TTL with automatic cleanup
+  - Handles 100+ cache entries efficiently
+  - Console logging for cache hits/misses
+- **Fallback**: Shows "Hold For Pickup - FREE" when USPS API fails
+- **Testing**: ✅ Local server (port 3001), ❌ Production deployment pending
+- **Next Steps**: 
+  1. Activate USPS Web Tools account at https://registration.shippingapis.com/
+  2. Deploy changes to production when credentials work
+  3. Test live USPS API integration
+
 ## Known Issues / TODO
 - [x] Execute database update for product name change (reverted approach)
 - [ ] Rotate exposed PostgreSQL credentials  
 - [ ] Fix product display issue on live site
 - [ ] Plan proper product name change for later
+- [ ] **USPS**: Activate Web Tools account credentials
+- [ ] **USPS**: Deploy shipping integration to production
 
 ## Commands
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)
 - **Admin Access**: Add `?key=rells-kitchen-admin-2025` to admin endpoints
+- **USPS Test**: `curl -X POST http://localhost:3001/api/calculate-shipping -H "Content-Type: application/json" -d '{"zipCode":"10001","productSize":"medium","quantity":2}'`
