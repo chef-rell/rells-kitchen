@@ -1186,14 +1186,30 @@ app.get('/admin/fix-tamarind', async (req, res) => {
   }
   
   try {
-    // Update the product name
-    const result = await pool.query(
-      'UPDATE products SET name = $1 WHERE name = $2',
-      ['Tamarind_Sweets', 'Tamarind_Splice']
-    );
+    // Force update the product using the same logic as initializeDatabase
+    const result = await pool.query(`
+      UPDATE products SET 
+        name = $1,
+        description = $2,
+        price = $3,
+        available = $4,
+        neo_flavor_profile = $5,
+        user_rating = $6,
+        inventory_count = $7
+      WHERE id = $8
+    `, [
+      'Tamarind_Sweets',
+      "This beloved Caribbean comfort food delivers the perfect harmony of sweet and tangy flavors. A treasured local dish known as 'Tamarind Stew'.",
+      6.99,
+      true,
+      4,
+      4,
+      15,
+      'fixed-tamarind-stew-id'
+    ]);
     
     res.json({ 
-      message: 'Product name updated successfully',
+      message: 'Product forcefully updated to Tamarind_Sweets',
       updated_records: result.rowCount,
       timestamp: new Date().toISOString()
     });
