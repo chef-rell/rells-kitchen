@@ -26,7 +26,8 @@
       "Bash(wmic process where:*)",
       "Bash(git rm:*)",
       "Bash(rm:*)",
-      "Bash(git filter-branch:*)"
+      "Bash(git filter-branch:*)",
+      "WebFetch(domain:www.rellskitchen.com)"
     ],
     "deny": []
   }

@@ -45,8 +45,8 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// PostgreSQL connection
-const connectionString = process.env.DATABASE_URL;
+// PostgreSQL connection  
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:qYsSoNHsFiSRLdVzmzHknIBufxqQwmmK@shuttle.proxy.rlwy.net:57798/railway';
 
 const pool = new Pool({
   connectionString: connectionString,
@@ -1187,6 +1187,11 @@ app.get('/admin/update-product-name', async (req, res) => {
   
   try {
     console.log('Starting product name update...');
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    
+    // First check current products
+    const currentResult = await pool.query("SELECT id, name FROM products");
+    console.log('Current products:', currentResult.rows);
     
     // Update the product name in the products table
     const updateResult = await pool.query(
@@ -1203,6 +1208,8 @@ app.get('/admin/update-product-name', async (req, res) => {
     
     const result = {
       success: true,
+      database_url_exists: !!process.env.DATABASE_URL,
+      current_products: currentResult.rows,
       updated_records: updateResult.rowCount,
       current_name: verifyResult.rows[0]?.name || 'Not found',
       verification: verifyResult.rows[0] || null,
@@ -1216,7 +1223,9 @@ app.get('/admin/update-product-name', async (req, res) => {
     console.error('❌ Error updating product name:', error);
     res.status(500).json({ 
       error: 'Update failed', 
-      details: error.message 
+      details: error.message,
+      stack: error.stack,
+      database_url_exists: !!process.env.DATABASE_URL
     });
   }
 });
