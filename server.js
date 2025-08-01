@@ -1286,4 +1286,5 @@ app.listen(PORT, () => {
   console.log(`🌴  Caribbean-Cyberpunk fusion cuisine awaits...`);
   console.log(`📁  Static files served from: ${path.join(__dirname, 'public')}`);
   console.log(`🚀  Deployment successful at ${new Date().toISOString()}`);
+  console.log(`📦  Product: Tamarind_Sweets should be available`);
 });
