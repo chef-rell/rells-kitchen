@@ -2360,9 +2360,30 @@ app.get('/api/health', (req, res) => {
       hasDatabase: !!process.env.DATABASE_URL,
       hasSmtpEmail: !!process.env.SMTP_EMAIL,
       hasSmtpPassword: !!process.env.SMTP_PASSWORD,
-      notificationService: notificationService ? 'initialized' : 'failed'
+      smtpEmailValue: process.env.SMTP_EMAIL ? process.env.SMTP_EMAIL.substring(0, 5) + '...' : 'undefined',
+      smtpPasswordLength: process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.length : 0,
+      notificationService: notificationService ? 'initialized' : 'failed',
+      notificationServiceStatus: notificationService ? notificationService.getServiceStatus() : 'N/A'
     };
     res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
+// Admin-only diagnostic endpoint
+app.get('/api/admin/env-debug', requireAdmin, (req, res) => {
+  try {
+    const envVars = {
+      NODE_ENV: process.env.NODE_ENV || 'undefined',
+      PORT: process.env.PORT || 'undefined',
+      DATABASE_URL: process.env.DATABASE_URL ? 'SET (hidden)' : 'undefined',
+      SMTP_EMAIL: process.env.SMTP_EMAIL || 'undefined',
+      SMTP_PASSWORD: process.env.SMTP_PASSWORD ? `SET (${process.env.SMTP_PASSWORD.length} chars)` : 'undefined',
+      PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID ? 'SET (hidden)' : 'undefined',
+      allEnvKeys: Object.keys(process.env).filter(key => key.includes('SMTP')).sort()
+    };
+    res.json(envVars);
   } catch (error) {
     res.status(500).json({ error: error.message, stack: error.stack });
   }
