@@ -31,9 +31,13 @@ const taxCalculator = new TaxCalculator();
 // Initialize notification service with error handling
 let notificationService;
 try {
+  console.log('🔧 Initializing notification service...');
   notificationService = new NotificationService();
+  console.log('✅ Notification service created');
+  console.log('📊 Service status:', notificationService.getServiceStatus());
 } catch (error) {
   console.error('❌ Error initializing notification service:', error.message);
+  console.error('❌ Error stack:', error.stack);
   // Create a fallback notification service that handles errors gracefully
   notificationService = {
     sendTestEmail: async () => { throw new Error('Email service not available'); },
