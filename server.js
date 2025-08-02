@@ -2284,52 +2284,86 @@ app.get('/api/admin/system-status', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
   try {
-    console.log('🧪 Starting email test...');
+    console.log('🧪 Starting direct email test (bypassing service status)...');
     
-    // Check if notification service is available
-    if (!notificationService) {
-      throw new Error('Notification service not initialized');
-    }
-    
-    // Check service status
-    const serviceStatus = notificationService.getServiceStatus();
-    console.log('📧 Email service status:', serviceStatus.email);
-    
-    if (!serviceStatus.email.configured) {
-      throw new Error('Email service not configured - missing SMTP credentials');
-    }
+    // Direct environment variable check
+    console.log('📧 Direct env check - SMTP_EMAIL:', !!process.env.SMTP_EMAIL);
+    console.log('📧 Direct env check - SMTP_PASSWORD:', !!process.env.SMTP_PASSWORD);
+    console.log('📧 SMTP_EMAIL value:', process.env.SMTP_EMAIL);
+    console.log('📧 SMTP_PASSWORD length:', process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.length : 0);
     
     // Get admin email from settings
     const emailResult = await pool.query('SELECT setting_value FROM admin_settings WHERE setting_key = $1', ['admin_email']);
     const adminEmail = emailResult.rows.length > 0 ? emailResult.rows[0].setting_value : 'admin@rellskitchen.com';
     
-    console.log('📧 Sending test email to:', adminEmail);
-    console.log('📧 SMTP Email configured:', process.env.SMTP_EMAIL ? 'Yes' : 'No');
-    console.log('📧 SMTP Password configured:', process.env.SMTP_PASSWORD ? 'Yes' : 'No');
+    // Create transporter directly (bypass notification service)
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+      throw new Error('SMTP credentials not found in environment variables');
+    }
     
-    const result = await notificationService.sendTestEmail(adminEmail);
-    console.log('✅ Test email sent successfully:', result.messageId);
+    console.log('📧 Creating direct Gmail transporter...');
+    const nodemailer = require('nodemailer');
+    
+    const transporter = nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD
+      }
+    });
+    
+    console.log('📧 Transporter created successfully');
+    console.log('📧 Sending test email to:', adminEmail);
+    
+    const mailOptions = {
+      from: process.env.SMTP_EMAIL,
+      to: adminEmail,
+      subject: '🧪 Direct Test Email - Rell\'s Kitchen Admin',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #00f5ff;">🏝️ Rell's Kitchen Admin Test</h2>
+          <p>This is a direct test email bypassing the notification service.</p>
+          <p><strong>Test Details:</strong></p>
+          <ul>
+            <li>Sent: ${new Date().toLocaleString()}</li>
+            <li>Method: Direct nodemailer</li>
+            <li>Status: ✅ Working</li>
+            <li>From: ${process.env.SMTP_EMAIL}</li>
+          </ul>
+          <p style="color: #666; font-size: 12px;">
+            Caribbean • Cyberpunk • Fusion<br>
+            Neo-Caribbean cuisine from the future
+          </p>
+        </div>
+      `
+    };
+    
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✅ Direct test email sent successfully:', result.messageId);
     
     res.json({ 
       success: true, 
-      message: 'Test email sent successfully',
+      message: 'Direct test email sent successfully',
       messageId: result.messageId,
       recipient: adminEmail,
-      smtpUser: process.env.SMTP_EMAIL
+      smtpUser: process.env.SMTP_EMAIL,
+      method: 'direct-nodemailer'
     });
   } catch (error) {
-    console.error('❌ Error sending test email:', error);
+    console.error('❌ Error sending direct test email:', error);
     console.error('❌ Error stack:', error.stack);
     
     res.status(500).json({ 
-      error: 'Failed to send test email', 
+      error: 'Failed to send direct test email', 
       details: error.message,
+      errorCode: error.code,
+      errorCommand: error.command,
       smtpConfigured: {
         email: !!process.env.SMTP_EMAIL,
-        password: !!process.env.SMTP_PASSWORD
-      },
-      errorCode: error.code,
-      errorCommand: error.command
+        password: !!process.env.SMTP_PASSWORD,
+        emailValue: process.env.SMTP_EMAIL,
+        passwordLength: process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.length : 0
+      }
     });
   }
 });
