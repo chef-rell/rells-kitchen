@@ -1473,16 +1473,19 @@ app.post('/api/capture-paypal-payment', optionalAuth, async (req, res) => {
     const subtotal = (subProduct.price * orderData.quantity);
     const totalAmount = subtotal + orderData.shippingCost - (orderData.couponDiscount || 0) - (orderData.subscriberDiscount || 0);
 
+    // Generate unique order ID
+    const orderUniqueId = uuidv4();
+    
     // Insert the order into our database
     const orderInsertResult = await pool.query(`
       INSERT INTO orders (
-        sub_product_id, product_id, customer_email, customer_name, customer_phone,
+        id, sub_product_id, product_id, customer_email, customer_name, customer_phone,
         shipping_street, shipping_city, shipping_state, shipping_zip,
         shipping_method, shipping_cost, quantity, total_amount, paypal_order_id, order_notes, 
         coupon_code, coupon_discount, user_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING id`,
       [
-        orderData.subProductId, orderData.productId, orderData.customerEmail, customerName, '',
+        orderUniqueId, orderData.subProductId, orderData.productId, orderData.customerEmail, customerName, '',
         shippingAddress.street, shippingAddress.city, shippingAddress.state, shippingAddress.zip,
         orderData.shippingMethod, orderData.shippingCost || 0, orderData.quantity, totalAmount, 
         orderId, orderData.orderNotes, orderData.couponCode, orderData.couponDiscount || 0, 
