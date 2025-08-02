@@ -54,71 +54,76 @@
         </video>
         <div class="container">
             <h2 class="section-title">Processing Your <span class="usvi-accent">Payment</span></h2>
-            <div class="menu-grid">
-                <div class="product-card">
-                    <div class="product-header">
-                        <h3 class="product-name">PAYMENT STATUS</h3>
+            
+            <div class="product-card">
+                <div class="product-header">
+                    <h3 class="product-name">PAYMENT STATUS</h3>
+                </div>
+                <div class="card-content" style="padding: 25px;">
+                    <div id="processing-content" style="text-align: center;">
+                        <div class="processing-spinner"></div>
+                        <h3 style="color: var(--neon-cyan); margin-bottom: 20px;">Processing Payment...</h3>
+                        <p style="color: var(--text-light); margin-bottom: 20px;">
+                            Please wait while we complete your order. Do not close this window.
+                        </p>
                     </div>
-                    <div class="card-content" style="padding: 25px; text-align: center;">
-                        <div id="processing-content">
-                            <div class="processing-spinner"></div>
-                            <h3 style="color: var(--neon-cyan); margin-bottom: 20px;">Processing Payment...</h3>
-                            <p style="color: var(--text-light); margin-bottom: 20px;">
-                                Please wait while we complete your order. Do not close this window.
-                            </p>
-                        </div>
-                        
-                        <div id="success-content" style="display: none;">
+                    
+                    <div id="success-content" style="display: none;">
+                        <div style="text-align: center; margin-bottom: 30px;">
                             <div style="font-size: 3em; margin-bottom: 20px;">✅</div>
                             <h3 style="color: var(--success-green); margin-bottom: 20px;">Payment Successful!</h3>
-                            <div class="form-row">
-                                <div class="input-group">
-                                    <input type="text" id="order-id" readonly>
-                                    <label>Order ID</label>
-                                </div>
-                                <div class="input-group">
-                                    <input type="text" id="total-paid" readonly>
-                                    <label>Total Paid</label>
-                                </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="input-group">
+                                <input type="text" id="order-id" readonly>
+                                <label>Order ID</label>
                             </div>
-                            <div class="form-row">
-                                <div class="input-group">
-                                    <input type="text" id="product-info" readonly>
-                                    <label>Product</label>
-                                </div>
-                                <div class="input-group">
-                                    <input type="text" id="size-quantity" readonly>
-                                    <label>Size & Quantity</label>
-                                </div>
+                            <div class="input-group">
+                                <input type="text" id="total-paid" readonly>
+                                <label>Total Paid</label>
                             </div>
-                            <div class="form-row">
-                                <div class="input-group full-width">
-                                    <textarea id="next-steps" readonly style="height: 80px;">📧 Confirmation email sent
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <input type="text" id="product-info" readonly>
+                                <label>Product</label>
+                            </div>
+                            <div class="input-group">
+                                <input type="text" id="size-quantity" readonly>
+                                <label>Size & Quantity</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group full-width">
+                                <textarea id="next-steps" readonly style="height: 80px;">📧 Confirmation email sent
 👨‍🍳 Chef Rell will prepare your order  
 📱 You'll receive local USPS pickup or shipping notification within 48 hours
 🕒 Pickup hours: Mon-Fri 10AM-3PM CST</textarea>
-                                    <label>Next Steps</label>
-                                </div>
-                            </div>
-                            <div style="margin-top: 20px;">
-                                <a href="/" class="submit-btn" style="margin-right: 10px;">Continue Shopping</a>
-                                <a href="/account" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan);">View Account</a>
+                                <label>Next Steps</label>
                             </div>
                         </div>
-                        
-                        <div id="error-content" style="display: none;">
+                        <div class="form-row" style="justify-content: center; margin-top: 30px;">
+                            <a href="/" class="submit-btn" style="margin-right: 15px; text-decoration: none;">Continue Shopping</a>
+                            <a href="/account" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan); text-decoration: none;">View Account</a>
+                        </div>
+                    </div>
+                    
+                    <div id="error-content" style="display: none;">
+                        <div style="text-align: center; margin-bottom: 30px;">
                             <div style="font-size: 3em; margin-bottom: 20px;">❌</div>
                             <h3 style="color: var(--error-red); margin-bottom: 20px;">Payment Failed</h3>
-                            <div class="form-row">
-                                <div class="input-group full-width">
-                                    <textarea id="error-message" readonly style="height: 60px; color: var(--error-red);"></textarea>
-                                    <label>Error Details</label>
-                                </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="input-group full-width">
+                                <textarea id="error-message" readonly style="height: 60px; color: var(--error-red);"></textarea>
+                                <label>Error Details</label>
                             </div>
-                            <div style="margin-top: 20px;">
-                                <a href="/payment" class="submit-btn" style="margin-right: 10px;">Try Again</a>
-                                <a href="/" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan);">Back to Menu</a>
-                            </div>
+                        </div>
+                        <div class="form-row" style="justify-content: center; margin-top: 30px;">
+                            <a href="/payment" class="submit-btn" style="margin-right: 15px; text-decoration: none;">Try Again</a>
+                            <a href="/" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan); text-decoration: none;">Back to Menu</a>
                         </div>
                     </div>
                 </div>
