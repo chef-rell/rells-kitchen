@@ -51,10 +51,14 @@ class NotificationService {
 
   async sendTestEmail(recipientEmail = null) {
     if (!this.emailTransporter) {
-      throw new Error('Email service not configured');
+      throw new Error('Email service not configured - missing SMTP credentials');
     }
 
     const recipient = recipientEmail || process.env.ADMIN_EMAIL || 'admin@rellskitchen.com';
+
+    console.log('📧 Preparing test email...');
+    console.log('📧 From:', process.env.SMTP_EMAIL);
+    console.log('📧 To:', recipient);
 
     const mailOptions = {
       from: process.env.SMTP_EMAIL || 'noreply@rellskitchen.com',
@@ -69,6 +73,7 @@ class NotificationService {
             <li>Sent: ${new Date().toLocaleString()}</li>
             <li>Service: Email Notifications</li>
             <li>Status: ✅ Working</li>
+            <li>From: ${process.env.SMTP_EMAIL}</li>
           </ul>
           <p style="color: #666; font-size: 12px;">
             Caribbean • Cyberpunk • Fusion<br>
@@ -78,9 +83,27 @@ class NotificationService {
       `
     };
 
-    const result = await this.emailTransporter.sendMail(mailOptions);
-    console.log('✅ Test email sent:', result.messageId);
-    return result;
+    try {
+      console.log('📧 Attempting to send email via Gmail SMTP...');
+      const result = await this.emailTransporter.sendMail(mailOptions);
+      console.log('✅ Test email sent successfully:', result.messageId);
+      return result;
+    } catch (error) {
+      console.error('❌ Gmail SMTP Error:', error.message);
+      
+      // Provide specific error messages for common Gmail issues
+      if (error.code === 'EAUTH') {
+        throw new Error('Gmail authentication failed - check app password');
+      } else if (error.code === 'ENOTFOUND') {
+        throw new Error('Gmail SMTP server not found - check internet connection');
+      } else if (error.responseCode === 535) {
+        throw new Error('Gmail login failed - invalid email or app password');
+      } else if (error.responseCode === 534) {
+        throw new Error('Gmail requires app-specific password - regular password not allowed');
+      } else {
+        throw new Error(`Gmail SMTP Error: ${error.message} (Code: ${error.code})`);
+      }
+    }
   }
 
   async sendTestSMS(recipientPhone = null) {

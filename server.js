@@ -2280,21 +2280,53 @@ app.get('/api/admin/system-status', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
   try {
+    console.log('🧪 Starting email test...');
+    
+    // Check if notification service is available
+    if (!notificationService) {
+      throw new Error('Notification service not initialized');
+    }
+    
+    // Check service status
+    const serviceStatus = notificationService.getServiceStatus();
+    console.log('📧 Email service status:', serviceStatus.email);
+    
+    if (!serviceStatus.email.configured) {
+      throw new Error('Email service not configured - missing SMTP credentials');
+    }
+    
     // Get admin email from settings
     const emailResult = await pool.query('SELECT setting_value FROM admin_settings WHERE setting_key = $1', ['admin_email']);
-    const adminEmail = emailResult.rows.length > 0 ? emailResult.rows[0].setting_value : null;
+    const adminEmail = emailResult.rows.length > 0 ? emailResult.rows[0].setting_value : 'admin@rellskitchen.com';
+    
+    console.log('📧 Sending test email to:', adminEmail);
+    console.log('📧 SMTP Email configured:', process.env.SMTP_EMAIL ? 'Yes' : 'No');
+    console.log('📧 SMTP Password configured:', process.env.SMTP_PASSWORD ? 'Yes' : 'No');
     
     const result = await notificationService.sendTestEmail(adminEmail);
-    console.log('✅ Test email sent successfully');
+    console.log('✅ Test email sent successfully:', result.messageId);
+    
     res.json({ 
       success: true, 
       message: 'Test email sent successfully',
       messageId: result.messageId,
-      recipient: adminEmail
+      recipient: adminEmail,
+      smtpUser: process.env.SMTP_EMAIL
     });
   } catch (error) {
-    console.error('Error sending test email:', error);
-    res.status(500).json({ error: 'Failed to send test email', details: error.message });
+    console.error('❌ Error sending test email:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    res.status(500).json({ 
+      error: 'Failed to send test email', 
+      details: error.message,
+      smtpConfigured: {
+        email: !!process.env.SMTP_EMAIL,
+        password: !!process.env.SMTP_PASSWORD
+      },
+      errorCode: error.code,
+      errorCommand: error.command
+    });
   }
 });
 
