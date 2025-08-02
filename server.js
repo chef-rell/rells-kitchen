@@ -523,6 +523,43 @@ app.post('/api/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// Auth verification endpoint for admin dashboard
+app.get('/api/auth/verify', async (req, res) => {
+  const token = req.cookies.token;
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No authentication token' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Get user from database to get current role and info
+    const userResult = await pool.query('SELECT id, username, email, role FROM users WHERE id = $1', [decoded.userId]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// Logout endpoint for admin dashboard (alternative path)
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('token');
+  res.json({ message: 'Logged out successfully' });
+});
+
 app.get('/api/user', authenticateToken, async (req, res) => {
   if (req.user.role === 'guest') {
     return res.json({ user: { id: req.user.userId, username: 'guest', role: 'guest' } });
