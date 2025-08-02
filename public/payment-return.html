@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Processing - Rell's Kitchen</title>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .processing-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 245, 255, 0.3);
+            border-top-color: var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-grid"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1 class="brand-title">RELL'S <span class="usvi-accent">KITCHEN</span></h1>
+                <p class="brand-subtitle">Caribbean • Cyberpunk • Fusion</p>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">← Back to Menu</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="menu-section">
+        <video class="menu-background-video" autoplay muted>
+            <source src="/images/palm-trees-and-futuristic-neon-lit-cabanas-glow-on-a-tropical-beach_preview.mp4" type="video/mp4">
+        </video>
+        <div class="container">
+            <h2 class="section-title">Processing Your <span class="usvi-accent">Payment</span></h2>
+            <div class="menu-grid">
+                <div class="product-card">
+                    <div class="product-header">
+                        <h3 class="product-name">PAYMENT STATUS</h3>
+                    </div>
+                    <div class="card-content" style="padding: 25px; text-align: center;">
+                        <div id="processing-content">
+                            <div class="processing-spinner"></div>
+                            <h3 style="color: var(--neon-cyan); margin-bottom: 20px;">Processing Payment...</h3>
+                            <p style="color: var(--text-light); margin-bottom: 20px;">
+                                Please wait while we complete your order. Do not close this window.
+                            </p>
+                        </div>
+                        
+                        <div id="success-content" style="display: none;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">✅</div>
+                            <h3 style="color: var(--success-green); margin-bottom: 20px;">Payment Successful!</h3>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <input type="text" id="order-id" readonly>
+                                    <label>Order ID</label>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="total-paid" readonly>
+                                    <label>Total Paid</label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <input type="text" id="product-info" readonly>
+                                    <label>Product</label>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="size-quantity" readonly>
+                                    <label>Size & Quantity</label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group full-width">
+                                    <textarea id="next-steps" readonly style="height: 80px;">📧 Confirmation email sent
+👨‍🍳 Chef Rell will prepare your order  
+📱 You'll receive local USPS pickup or shipping notification within 48 hours
+🕒 Pickup hours: Mon-Fri 10AM-3PM CST</textarea>
+                                    <label>Next Steps</label>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <a href="/" class="submit-btn" style="margin-right: 10px;">Continue Shopping</a>
+                                <a href="/account" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan);">View Account</a>
+                            </div>
+                        </div>
+                        
+                        <div id="error-content" style="display: none;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">❌</div>
+                            <h3 style="color: var(--error-red); margin-bottom: 20px;">Payment Failed</h3>
+                            <div class="form-row">
+                                <div class="input-group full-width">
+                                    <textarea id="error-message" readonly style="height: 60px; color: var(--error-red);"></textarea>
+                                    <label>Error Details</label>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <a href="/payment" class="submit-btn" style="margin-right: 10px;">Try Again</a>
+                                <a href="/" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan);">Back to Menu</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>RELL'S KITCHEN</h3>
+                    <p>Neo-Caribbean Fusion • Est. 2157</p>
+                </div>
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h4>Contact</h4>
+                        <div class="about-description">🕒 Mon-Fri: 10AM-3PM CST<br>📞 (501) 760-9490<br>✉️ sales@rellskitchen.com</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2157 Rell's Kitchen. All rights reserved. | Powered by Kaiel™</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        class PaymentReturnHandler {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                console.log('Payment return page loaded');
+                
+                // Get URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('token');
+                const paymentId = urlParams.get('PayerID');
+                
+                console.log('PayPal return parameters:', { token, paymentId });
+                
+                if (token && paymentId) {
+                    this.processPayment(token, paymentId);
+                } else {
+                    this.showError('Missing payment parameters. Please try again.');
+                }
+            }
+
+            async processPayment(token, payerId) {
+                try {
+                    // Get stored order data from sessionStorage
+                    const pendingOrderData = sessionStorage.getItem('pendingPayPalOrder');
+                    if (!pendingOrderData) {
+                        throw new Error('Order data not found. Please restart the checkout process.');
+                    }
+
+                    const orderInfo = JSON.parse(pendingOrderData);
+                    console.log('Processing payment for order:', orderInfo);
+
+                    // Capture the PayPal payment
+                    const response = await fetch('/api/capture-paypal-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            orderId: orderInfo.orderId,
+                            payerId: payerId,
+                            token: token,
+                            orderData: orderInfo.orderData
+                        })
+                    });
+
+                    const result = await response.json();
+                    console.log('Payment capture result:', result);
+
+                    if (response.ok && result.success) {
+                        this.showSuccess(result);
+                        // Clear stored order data
+                        sessionStorage.removeItem('pendingPayPalOrder');
+                    } else {
+                        throw new Error(result.error || 'Payment processing failed');
+                    }
+
+                } catch (error) {
+                    console.error('Payment processing error:', error);
+                    this.showError(error.message);
+                }
+            }
+
+            showSuccess(orderData) {
+                document.getElementById('processing-content').style.display = 'none';
+                document.getElementById('error-content').style.display = 'none';
+                
+                const successContent = document.getElementById('success-content');
+                successContent.style.display = 'block';
+                
+                // Populate success details
+                if (orderData.orderId) {
+                    document.getElementById('order-id').value = orderData.orderId;
+                }
+                if (orderData.totalAmount) {
+                    document.getElementById('total-paid').value = `$${parseFloat(orderData.totalAmount).toFixed(2)}`;
+                }
+                if (orderData.productName) {
+                    document.getElementById('product-info').value = orderData.productName;
+                }
+                if (orderData.productSize && orderData.quantity) {
+                    document.getElementById('size-quantity').value = `${orderData.productSize} (Qty: ${orderData.quantity})`;
+                }
+            }
+
+            showError(errorMessage) {
+                document.getElementById('processing-content').style.display = 'none';
+                document.getElementById('success-content').style.display = 'none';
+                
+                const errorContent = document.getElementById('error-content');
+                errorContent.style.display = 'block';
+                
+                document.getElementById('error-message').value = errorMessage;
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PaymentReturnHandler();
+        });
+    </script>
+</body>
+</html>

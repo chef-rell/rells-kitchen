@@ -1078,6 +1078,317 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
   }
 });
 
+// Create PayPal order for redirect flow
+app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
+  console.log('Creating PayPal order for redirect flow:', req.body);
+  
+  const {
+    subProductId,
+    productId,
+    productName,
+    productSize,
+    quantity,
+    customerEmail,
+    shippingZip,
+    shippingMethod,
+    shippingCost,
+    couponCode,
+    couponDiscount,
+    isSubscriber,
+    subscriberDiscount,
+    taxAmount,
+    total,
+    orderNotes
+  } = req.body;
+
+  // Validate required fields
+  if (!subProductId || !productId || !quantity || !customerEmail || !total) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    // Get PayPal access token
+    const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error('Failed to get PayPal access token');
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    // Create PayPal order
+    const subtotal = parseFloat((total - shippingCost - taxAmount + couponDiscount + subscriberDiscount).toFixed(2));
+    
+    const breakdown = {
+      item_total: {
+        currency_code: "USD",
+        value: subtotal.toFixed(2)
+      },
+      shipping: {
+        currency_code: "USD",
+        value: parseFloat(shippingCost).toFixed(2)
+      }
+    };
+
+    // Add tax to breakdown if applicable
+    if (taxAmount > 0) {
+      breakdown.tax_total = {
+        currency_code: "USD",
+        value: parseFloat(taxAmount).toFixed(2)
+      };
+    }
+
+    // Add discount to breakdown if any discounts are applied
+    const totalDiscountAmount = couponDiscount + subscriberDiscount;
+    if (totalDiscountAmount > 0) {
+      breakdown.discount = {
+        currency_code: "USD",
+        value: parseFloat(totalDiscountAmount).toFixed(2)
+      };
+    }
+
+    const orderRequest = {
+      intent: "CAPTURE",
+      purchase_units: [{
+        amount: {
+          currency_code: "USD",
+          value: parseFloat(total).toFixed(2),
+          breakdown: breakdown
+        },
+        items: [{
+          name: `${productName} (${productSize})`,
+          quantity: quantity.toString(),
+          unit_amount: {
+            currency_code: "USD",
+            value: parseFloat(subtotal / quantity).toFixed(2)
+          }
+        }],
+        description: `${productName} (${productSize}) x${quantity} - Rell's Kitchen`,
+        custom_id: `${subProductId}_${quantity}_${Date.now()}`
+      }],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+            brand_name: "Rell's Kitchen",
+            locale: "en-US",
+            landing_page: "LOGIN",
+            shipping_preference: "GET_FROM_FILE",
+            user_action: "PAY_NOW",
+            return_url: `${req.protocol}://${req.get('host')}/payment-return`,
+            cancel_url: `${req.protocol}://${req.get('host')}/payment-cancel`
+          }
+        }
+      }
+    };
+
+    console.log('PayPal order request:', JSON.stringify(orderRequest, null, 2));
+
+    const orderResponse = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'PayPal-Request-Id': Date.now().toString()
+      },
+      body: JSON.stringify(orderRequest)
+    });
+
+    if (!orderResponse.ok) {
+      const errorData = await orderResponse.json();
+      console.error('PayPal order creation failed:', errorData);
+      throw new Error(`PayPal order creation failed: ${errorData.message || 'Unknown error'}`);
+    }
+
+    const orderData = await orderResponse.json();
+    console.log('PayPal order created:', orderData);
+
+    // Find the approval URL
+    const approvalUrl = orderData.links?.find(link => link.rel === 'approve')?.href;
+    if (!approvalUrl) {
+      throw new Error('No approval URL found in PayPal response');
+    }
+
+    res.json({
+      orderId: orderData.id,
+      approvalUrl: approvalUrl,
+      status: orderData.status
+    });
+
+  } catch (error) {
+    console.error('PayPal order creation error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create PayPal order',
+      details: error.message 
+    });
+  }
+});
+
+// Capture PayPal payment for redirect flow
+app.post('/api/capture-paypal-payment', optionalAuth, async (req, res) => {
+  console.log('Capturing PayPal payment for redirect flow:', req.body);
+  
+  const {
+    orderId,
+    payerId,
+    token,
+    orderData
+  } = req.body;
+
+  if (!orderId || !payerId || !orderData) {
+    return res.status(400).json({ error: 'Missing required payment capture data' });
+  }
+
+  try {
+    // Get PayPal access token
+    const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error('Failed to get PayPal access token');
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    // Capture the PayPal order
+    const captureResponse = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'PayPal-Request-Id': Date.now().toString()
+      }
+    });
+
+    if (!captureResponse.ok) {
+      const errorData = await captureResponse.json();
+      console.error('PayPal capture failed:', errorData);
+      throw new Error(`PayPal capture failed: ${errorData.message || 'Unknown error'}`);
+    }
+
+    const captureData = await captureResponse.json();
+    console.log('PayPal capture successful:', captureData);
+
+    // Extract shipping address from PayPal data
+    const paypalShipping = captureData.purchase_units[0]?.shipping?.address;
+    const shippingAddress = paypalShipping ? {
+      street: paypalShipping.address_line_1 || '',
+      city: paypalShipping.admin_area_2 || '',
+      state: paypalShipping.admin_area_1 || '',
+      zip: paypalShipping.postal_code || ''
+    } : {
+      // Fallback address from order data
+      street: 'No address provided',
+      city: 'Test City',
+      state: 'AR',
+      zip: orderData.shippingZip || '72000'
+    };
+
+    // Extract customer name from PayPal data
+    const paypalPayer = captureData.payer;
+    const customerName = paypalPayer ? `${paypalPayer.name?.given_name || ''} ${paypalPayer.name?.surname || ''}`.trim() : 'PayPal Customer';
+
+    // Process the order in our system
+    const processOrderData = {
+      subProductId: orderData.subProductId,
+      productId: orderData.productId,
+      quantity: orderData.quantity,
+      customerEmail: orderData.customerEmail,
+      customerName: customerName,
+      customerPhone: '', // Not collected in redirect flow
+      orderNotes: orderData.orderNotes || '',
+      shippingAddress: shippingAddress,
+      shippingMethod: orderData.shippingMethod,
+      shippingCost: orderData.shippingCost,
+      couponCode: orderData.couponCode,
+      couponDiscount: orderData.couponDiscount,
+      isSubscriber: orderData.isSubscriber,
+      subscriberDiscount: orderData.subscriberDiscount,
+      paypalOrderId: orderId,
+      paypalData: captureData
+    };
+
+    console.log('Processing order in our system:', processOrderData);
+
+    // Get sub-product details for the response
+    const subProductResult = await pool.query(
+      'SELECT sp.*, p.name as product_name FROM sub_products sp JOIN products p ON sp.parent_product_id = p.id WHERE sp.id = $1', 
+      [orderData.subProductId]
+    );
+
+    if (subProductResult.rows.length === 0) {
+      throw new Error('Product not found');
+    }
+
+    const subProduct = subProductResult.rows[0];
+
+    // Calculate total amount
+    const subtotal = (subProduct.price * orderData.quantity);
+    const totalAmount = subtotal + orderData.shippingCost - (orderData.couponDiscount || 0) - (orderData.subscriberDiscount || 0);
+
+    // Insert the order into our database
+    const orderInsertResult = await pool.query(`
+      INSERT INTO orders (
+        sub_product_id, product_id, customer_email, customer_name, customer_phone,
+        shipping_address_street, shipping_address_city, shipping_address_state, shipping_address_zip,
+        shipping_method, shipping_cost, quantity, total_amount, paypal_order_id, order_notes, 
+        coupon_code, coupon_discount, user_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+      [
+        orderData.subProductId, orderData.productId, orderData.customerEmail, customerName, '',
+        shippingAddress.street, shippingAddress.city, shippingAddress.state, shippingAddress.zip,
+        orderData.shippingMethod, orderData.shippingCost || 0, orderData.quantity, totalAmount, 
+        orderId, orderData.orderNotes, orderData.couponCode, orderData.couponDiscount || 0, 
+        req.user?.id || null
+      ]
+    );
+
+    const newOrderId = orderInsertResult.rows[0].id;
+    console.log('Order saved to database with ID:', newOrderId);
+
+    // Update inventory
+    await pool.query(
+      'UPDATE sub_products SET inventory_count = inventory_count - $1 WHERE id = $2',
+      [orderData.quantity, orderData.subProductId]
+    );
+
+    console.log('Inventory updated for sub-product:', orderData.subProductId);
+
+    res.json({
+      success: true,
+      orderId: newOrderId,
+      paypalOrderId: orderId,
+      totalAmount: totalAmount.toFixed(2),
+      productName: subProduct.product_name,
+      productSize: subProduct.size,
+      quantity: orderData.quantity,
+      message: 'Payment captured and order processed successfully'
+    });
+
+  } catch (error) {
+    console.error('PayPal payment capture error:', error);
+    res.status(500).json({ 
+      error: 'Failed to capture PayPal payment',
+      details: error.message 
+    });
+  }
+});
+
 app.post('/api/process-payment', optionalAuth, async (req, res) => {
   console.log('Payment processing started with data:', {
     subProductId: req.body.subProductId,

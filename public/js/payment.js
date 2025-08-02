@@ -632,7 +632,7 @@ class PaymentHandler {
     }
 
     setupPayPalButtons() {
-        console.log('Setting up PayPal buttons with production client ID...');
+        console.log('Setting up PayPal redirect flow...');
         
         // Prevent multiple initialization
         if (this.paypalButtonsInitialized) {
@@ -644,243 +644,231 @@ class PaymentHandler {
             // Clear any existing PayPal button container content
             const paypalContainer = document.getElementById('paypal-button-container');
             if (paypalContainer) {
-                paypalContainer.innerHTML = '';
-            }
-
-            paypal.Buttons({
-            style: {
-                layout: 'vertical',
-                color: 'blue',
-                shape: 'rect',
-                label: 'paypal'
-            },
-            createOrder: async (data, actions) => {
-                const emailField = document.getElementById('customer-email');
-                const zipField = document.getElementById('shipping-zip');
-                const customerEmail = emailField.value.trim();
-                const shippingZip = zipField.value.trim();
+                paypalContainer.innerHTML = `
+                    <button id="paypal-redirect-btn" class="submit-btn" style="width: 100%; margin-bottom: 15px; background: #0070ba; border: none; padding: 15px;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTcuMDc2IDNIM2EwLjUwNi41MDYgMCAwMC0uNTA3LjQ0OWwtMS40OTMgOS41NGEuMzA0LjMwNCAwIDAwLjMwNC4zNDVoMi42MThhLjUwNi41MDYgMCAwMC41MDctLjQ1bC40MjItMi42ODJoMi4xN2MzLjIxIDAgNS4xMTMtMS41NTMgNS42MDQtNC42NDEuMjIzLTEuMzk3LS4wMy0yLjQ5Mi0uNzU0LTMuMjUyLS43OS0uODI3LTEuOTctMS4yNDYtMy40MDgtMS4yNDZ6bTIuNjcgNS41NDNjLS4yNTQgMS43MjctMS4xODcgMS43MjctMi4xNDcgMS43MjdoLS41NDVsLjM4My0yLjQzN2guNDcxYy40MTggMCAuODEzIDAgMS4wMTcuMjY2LjEyMi4xNTkuMTQyLjM5MS4wOC42NDh6IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTMuMDc2IDRIM2EwLjUwNi41MDYgMCAwMC0uNTA3LjQ0OWwtMS40OTMgOS41NGEuMzA0LjMwNCAwIDAwLjMwNC4zNDVoMi42MThhLjUwNi41MDYgMCAwMC41MDctLjQ1bC40MjItMi42ODJoMi4xN2MzLjIxIDAgNS4xMTMtMS41NTMgNS42MDQtNC42NDEuMjIzLTEuMzk3LS4wMy0yLjQ5Mi0uNzU0LTMuMjUyLS43OS0uODI3LTEuOTctMS4yNDYtMy40MDgtMS4yNDZ6bTEuNjcgNS41NDNjLS4yNTQgMS43MjctMS4xODcgMS43MjctMi4xNDcgMS43MjdoLS41NDVsLjM4My0yLjQzN2guNDcxYy40MTggMCAuODEzIDAgMS4wMTcuMjY2LjEyMi4xNTkuMTQyLjM5MS4wOC42NDh6IiBmaWxsPSIjMDk5REREIi8+Cjwvc3ZnPgo=" alt="PayPal" style="width: 24px; height: 24px;">
+                            <span style="font-size: 16px; font-weight: 600;">Pay with PayPal</span>
+                        </div>
+                    </button>
+                    <div style="text-align: center; margin-top: 10px; font-size: 0.9em; color: var(--text-light);">
+                        You'll be redirected to PayPal to complete your payment
+                    </div>
+                `;
                 
-                // Clear any previous error styling
-                emailField.style.borderColor = '';
-                zipField.style.borderColor = '';
-                
-                if (!customerEmail) {
-                    this.showNotification('Please enter your email address before proceeding.', 'error');
-                    emailField.style.borderColor = 'var(--error-red)';
-                    emailField.focus();
-                    return Promise.reject(new Error('Missing email address'));
-                }
-                
-                // Basic email validation
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(customerEmail)) {
-                    this.showNotification('Please enter a valid email address.', 'error');
-                    emailField.style.borderColor = 'var(--error-red)';
-                    emailField.focus();
-                    return Promise.reject(new Error('Invalid email address'));
-                }
-
-                if (!shippingZip) {
-                    this.showNotification('Please enter your ZIP code before proceeding.', 'error');
-                    zipField.style.borderColor = 'var(--error-red)';
-                    zipField.focus();
-                    return Promise.reject(new Error('Missing ZIP code'));
-                }
-
-                if (!this.isValidZipCode(shippingZip)) {
-                    this.showNotification('Please enter a valid 5-digit ZIP code.', 'error');
-                    zipField.style.borderColor = 'var(--error-red)';
-                    zipField.focus();
-                    return Promise.reject(new Error('Invalid ZIP code'));
-                }
-
-                if (!this.shippingMethod || this.availableShippingRates.length === 0) {
-                    this.showNotification('Please wait for shipping options to load or refresh the page.', 'error');
-                    return Promise.reject(new Error('No shipping method selected'));
-                }
-
-                if (!this.selectedSubProduct) {
-                    this.showNotification('Please select a size before proceeding.', 'error');
-                    return Promise.reject(new Error('No product selected'));
-                }
-
-                // Calculate tax for the order using server-side tax calculator
-                const subtotal = parseFloat((this.selectedSubProduct.price * this.quantity).toFixed(2));
-                const couponDiscountAmount = parseFloat(this.calculateCouponDiscount(subtotal).toFixed(2));
-                const subscriberDiscountAmount = this.isSubscriber ? parseFloat((subtotal * 0.10).toFixed(2)) : 0;
-                const totalDiscountAmount = couponDiscountAmount + subscriberDiscountAmount;
-                const shippingCost = parseFloat(this.shippingCost.toFixed(2));
-                
-                // Get tax information from server
-                let taxAmount = 0;
-                let taxRate = 0;
-                try {
-                    const taxResponse = await fetch('/api/calculate-order-total', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            zipCode: shippingZip,
-                            productSize: this.selectedSubProduct.size.toLowerCase(),
-                            quantity: this.quantity,
-                            productPrice: this.selectedSubProduct.price
-                        })
+                // Add click handler for redirect flow
+                const redirectBtn = document.getElementById('paypal-redirect-btn');
+                if (redirectBtn) {
+                    redirectBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.initiatePayPalRedirect();
                     });
-                    
-                    if (taxResponse.ok) {
-                        const taxData = await taxResponse.json();
-                        taxAmount = taxData.tax.taxAmount || 0;
-                        taxRate = taxData.tax.taxRate || 0;
-                        console.log('Tax calculation:', taxData.tax);
-                    } else {
-                        console.warn('Tax calculation failed, proceeding without tax');
-                    }
-                } catch (error) {
-                    console.warn('Tax calculation error:', error);
                 }
-                
-                const total = parseFloat((subtotal + shippingCost + taxAmount - totalDiscountAmount).toFixed(2));
-
-                // Ensure total is positive
-                if (parseFloat(total) <= 0) {
-                    this.showNotification('Order total must be greater than $0.00', 'error');
-                    return Promise.reject(new Error('Invalid order total'));
-                }
-
-                console.log('Creating PayPal order with:', {
-                    subtotal: subtotal,
-                    couponDiscountAmount: couponDiscountAmount,
-                    subscriberDiscountAmount: subscriberDiscountAmount,
-                    totalDiscountAmount: totalDiscountAmount,
-                    shippingCost: this.shippingCost,
-                    taxAmount: taxAmount,
-                    taxRate: taxRate,
-                    total: total,
-                    productName: this.currentProduct.name,
-                    productSize: this.selectedSubProduct.size,
-                    quantity: this.quantity
-                });
-
-                const breakdown = {
-                    item_total: {
-                        currency_code: "USD",
-                        value: subtotal.toFixed(2)
-                    },
-                    shipping: {
-                        currency_code: "USD",
-                        value: shippingCost.toFixed(2)
-                    }
-                };
-
-                // Add tax to breakdown if applicable
-                if (taxAmount > 0) {
-                    breakdown.tax_total = {
-                        currency_code: "USD",
-                        value: taxAmount.toFixed(2)
-                    };
-                }
-
-                // Add discount to breakdown if any discounts are applied
-                if (totalDiscountAmount > 0) {
-                    breakdown.discount = {
-                        currency_code: "USD",
-                        value: totalDiscountAmount.toFixed(2)
-                    };
-                }
-
-                const orderRequest = {
-                    purchase_units: [{
-                        amount: {
-                            value: total.toFixed(2),
-                            breakdown: breakdown
-                        },
-                        items: [{
-                            name: `${this.currentProduct.name} (${this.selectedSubProduct.size})`,
-                            quantity: this.quantity.toString(),
-                            unit_amount: {
-                                currency_code: "USD",
-                                value: parseFloat(this.selectedSubProduct.price).toFixed(2)
-                            }
-                        }],
-                        description: `${this.currentProduct.name} (${this.selectedSubProduct.size}) x${this.quantity} - Rell's Kitchen`,
-                        custom_id: `${this.selectedSubProduct.id}_${this.quantity}_${Date.now()}`
-                    }]
-                };
-
-                // Verify the math before sending to PayPal
-                const calculatedTotal = subtotal + shippingCost + taxAmount - totalDiscountAmount;
-                const expectedTotal = parseFloat(total.toFixed(2));
-                
-                console.log('PayPal math verification:', {
-                    subtotal: subtotal,
-                    shippingCost: shippingCost,
-                    taxAmount: taxAmount,
-                    couponDiscountAmount: couponDiscountAmount,
-                    subscriberDiscountAmount: subscriberDiscountAmount,
-                    totalDiscountAmount: totalDiscountAmount,
-                    calculatedTotal: calculatedTotal,
-                    expectedTotal: expectedTotal,
-                    mathCheck: Math.abs(calculatedTotal - expectedTotal) < 0.01
-                });
-                
-                if (Math.abs(calculatedTotal - expectedTotal) >= 0.01) {
-                    console.error('PayPal amount mismatch detected before sending');
-                    this.showNotification('Calculation error. Please refresh and try again.', 'error');
-                    return Promise.reject(new Error('Amount calculation error'));
-                }
-                
-                console.log('PayPal order request:', JSON.stringify(orderRequest, null, 2));
-                
-                return actions.order.create(orderRequest).catch(error => {
-                    console.error('PayPal order creation failed:', error);
-                    this.showNotification('Failed to create payment order. Please try again.', 'error');
-                    throw error;
-                });
-            },
-            onApprove: async (data, actions) => {
-                try {
-                    const order = await actions.order.capture();
-                    
-                    // Calculate final shipping cost based on PayPal shipping address
-                    const shippingAddress = order.purchase_units[0]?.shipping?.address;
-                    if (shippingAddress) {
-                        try {
-                            const finalShippingCost = this.calculateFinalShippingCost(shippingAddress);
-                            this.shippingCost = finalShippingCost;
-                        } catch (error) {
-                            console.error('Shipping validation failed:', error);
-                            this.showNotification(error.message, 'error');
-                            return;
-                        }
-                    }
-                    
-                    await this.processPayment(order);
-                } catch (error) {
-                    console.error('Payment capture failed:', error);
-                    this.showNotification('Payment processing failed. Please try again.', 'error');
-                }
-            },
-            onError: (err) => {
-                console.error('PayPal error:', err);
-                this.showNotification('Payment failed. Please try again.', 'error');
-            },
-            onCancel: (data) => {
-                this.showNotification('Payment cancelled.', 'info');
             }
-        }).render('#paypal-button-container').then(() => {
-            console.log('PayPal buttons rendered successfully');
+            
             this.paypalButtonsInitialized = true;
-        }).catch(error => {
-            console.error('Failed to render PayPal buttons:', error);
-            this.paypalButtonsInitialized = false;
-            this.showPayPalError();
-        });
+            console.log('PayPal redirect button setup complete');
         
         } catch (error) {
-            console.error('Error setting up PayPal buttons:', error);
+            console.error('Error setting up PayPal redirect:', error);
             this.showPayPalError();
         }
+    }
+
+    async initiatePayPalRedirect() {
+        try {
+            // Validate form data before creating order
+            const emailField = document.getElementById('customer-email');
+            const zipField = document.getElementById('shipping-zip');
+            const customerEmail = emailField.value.trim();
+            const shippingZip = zipField.value.trim();
+            
+            // Clear any previous error styling
+            emailField.style.borderColor = '';
+            zipField.style.borderColor = '';
+            
+            if (!customerEmail) {
+                this.showNotification('Please enter your email address before proceeding.', 'error');
+                emailField.style.borderColor = 'var(--error-red)';
+                emailField.focus();
+                return;
+            }
+            
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(customerEmail)) {
+                this.showNotification('Please enter a valid email address.', 'error');
+                emailField.style.borderColor = 'var(--error-red)';
+                emailField.focus();
+                return;
+            }
+
+            if (!shippingZip) {
+                this.showNotification('Please enter your ZIP code before proceeding.', 'error');
+                zipField.style.borderColor = 'var(--error-red)';
+                zipField.focus();
+                return;
+            }
+
+            if (!this.isValidZipCode(shippingZip)) {
+                this.showNotification('Please enter a valid 5-digit ZIP code.', 'error');
+                zipField.style.borderColor = 'var(--error-red)';
+                zipField.focus();
+                return;
+            }
+
+            if (!this.shippingMethod || this.availableShippingRates.length === 0) {
+                this.showNotification('Please wait for shipping options to load or refresh the page.', 'error');
+                return;
+            }
+
+            if (!this.selectedSubProduct) {
+                this.showNotification('Please select a size before proceeding.', 'error');
+                return;
+            }
+
+            // Disable button and show loading state
+            const redirectBtn = document.getElementById('paypal-redirect-btn');
+            if (redirectBtn) {
+                redirectBtn.disabled = true;
+                redirectBtn.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <span>Creating Order...</span>
+                    </div>
+                `;
+            }
+
+            // Create order on server and get redirect URL
+            const orderData = await this.createPayPalOrder();
+            
+            if (orderData.approvalUrl) {
+                // Store order data in sessionStorage for return handling
+                sessionStorage.setItem('pendingPayPalOrder', JSON.stringify({
+                    orderId: orderData.orderId,
+                    orderData: {
+                        subProductId: this.selectedSubProduct.id,
+                        productId: this.currentProduct.id,
+                        quantity: this.quantity,
+                        customerEmail: customerEmail,
+                        orderNotes: document.getElementById('order-notes').value,
+                        shippingZip: shippingZip,
+                        shippingMethod: this.shippingMethod,
+                        shippingCost: this.shippingCost,
+                        couponCode: this.couponCode,
+                        couponDiscount: this.calculateCouponDiscount((this.selectedSubProduct.price * this.quantity).toFixed(2)),
+                        isSubscriber: this.isSubscriber,
+                        subscriberDiscount: this.isSubscriber ? parseFloat((this.selectedSubProduct.price * this.quantity).toFixed(2)) * 0.10 : 0
+                    }
+                }));
+                
+                // Redirect to PayPal
+                window.location.href = orderData.approvalUrl;
+            } else {
+                throw new Error('No approval URL received from PayPal');
+            }
+            
+        } catch (error) {
+            console.error('PayPal redirect failed:', error);
+            this.showNotification(error.message || 'Failed to create payment order. Please try again.', 'error');
+            
+            // Reset button state
+            const redirectBtn = document.getElementById('paypal-redirect-btn');
+            if (redirectBtn) {
+                redirectBtn.disabled = false;
+                redirectBtn.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTcuMDc2IDRIM2EwLjUwNi41MDYgMCAwMC0uNTA3LjQ0OWwtMS40OTMgOS41NGEuMzA0LjMwNCAwIDAwLjMwNC4zNDVoMi42MThhLjUwNi41MDYgMCAwMC41MDctLjQ1bC40MjItMi42ODJoMi4xN2MzLjIxIDAgNS4xMTMtMS41NTMgNS42MDQtNC42NDEuMjIzLTEuMzk3LS4wMy0yLjQ5Mi0uNzU0LTMuMjUyLS43OS0uODI3LTEuOTctMS4yNDYtMy40MDgtMS4yNDZ6bTIuNjcgNS41NDNjLS4yNTQgMS43MjctMS4xODcgMS43MjctMi4xNDcgMS43MjdoLS41NDVsLjM4My0yLjQzN2guNDcxYy40MTggMCAuODEzIDAgMS4wMTcuMjY2LjEyMi4xNTkuMTQyLjM5MS4wOC42NDh6IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMTMuMDc2IDRIM2EwLjUwNi41MDYgMCAwMC0uNTA3LjQ0OWwtMS40OTMgOS41NGEuMzA0LjMwNCAwIDAwLjMwNC4zNDVoMi42MThhLjUwNi41MDYgMCAwMC41MDctLjQ1bC40MjItMi42ODJoMi4xN2MzLjIxIDAgNS4xMTMtMS41NTMgNS42MDQtNC42NDEuMjIzLTEuMzk3LS4wMy0yLjQ5Mi0uNzU0LTMuMjUyLS43OS0uODI3LTEuOTctMS4yNDYtMy40MDgtMS4yNDZ6bTEuNjcgNS41NDNjLS4yNTQgMS43MjctMS4xODcgMS43MjctMi4xNDcgMS43MjdoLS41NDVsLjM4My0yLjQzN2guNDcxYy40MTggMCAuODEzIDAgMS4wMTcuMjY2LjEyMi4xNTkuMTQyLjM5MS4wOC42NDh6IiBmaWxsPSIjMDk5REREIi8+Cjwvc3ZnPgo=" alt="PayPal" style="width: 24px; height: 24px;">
+                        <span style="font-size: 16px; font-weight: 600;">Pay with PayPal</span>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async createPayPalOrder() {
+        const emailField = document.getElementById('customer-email');
+        const zipField = document.getElementById('shipping-zip');
+        const customerEmail = emailField.value.trim();
+        const shippingZip = zipField.value.trim();
+
+        // Calculate order totals
+        const subtotal = parseFloat((this.selectedSubProduct.price * this.quantity).toFixed(2));
+        const couponDiscountAmount = parseFloat(this.calculateCouponDiscount(subtotal).toFixed(2));
+        const subscriberDiscountAmount = this.isSubscriber ? parseFloat((subtotal * 0.10).toFixed(2)) : 0;
+        const totalDiscountAmount = couponDiscountAmount + subscriberDiscountAmount;
+        const shippingCost = parseFloat(this.shippingCost.toFixed(2));
+        
+        // Get tax information from server
+        let taxAmount = 0;
+        try {
+            const taxResponse = await fetch('/api/calculate-order-total', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    zipCode: shippingZip,
+                    productSize: this.selectedSubProduct.size.toLowerCase(),
+                    quantity: this.quantity,
+                    productPrice: this.selectedSubProduct.price
+                })
+            });
+            
+            if (taxResponse.ok) {
+                const taxData = await taxResponse.json();
+                taxAmount = taxData.tax.taxAmount || 0;
+                console.log('Tax calculation:', taxData.tax);
+            } else {
+                console.warn('Tax calculation failed, proceeding without tax');
+            }
+        } catch (error) {
+            console.warn('Tax calculation error:', error);
+        }
+        
+        const total = parseFloat((subtotal + shippingCost + taxAmount - totalDiscountAmount).toFixed(2));
+
+        // Ensure total is positive
+        if (parseFloat(total) <= 0) {
+            throw new Error('Order total must be greater than $0.00');
+        }
+
+        const orderRequest = {
+            subProductId: this.selectedSubProduct.id,
+            productId: this.currentProduct.id,
+            productName: this.currentProduct.name,
+            productSize: this.selectedSubProduct.size,
+            quantity: this.quantity,
+            customerEmail: customerEmail,
+            shippingZip: shippingZip,
+            shippingMethod: this.shippingMethod,
+            shippingCost: shippingCost,
+            couponCode: this.couponCode,
+            couponDiscount: couponDiscountAmount,
+            isSubscriber: this.isSubscriber,
+            subscriberDiscount: subscriberDiscountAmount,
+            taxAmount: taxAmount,
+            total: total,
+            orderNotes: document.getElementById('order-notes').value || ''
+        };
+
+        console.log('Creating PayPal order with:', orderRequest);
+
+        const response = await fetch('/api/create-paypal-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(orderRequest)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create PayPal order');
+        }
+
+        return await response.json();
     }
     
     showPayPalError() {
