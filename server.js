@@ -1102,7 +1102,16 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
   } = req.body;
 
   // Validate required fields
-  if (!subProductId || !productId || !quantity || !customerEmail || !total) {
+  if (!subProductId || !productId || !productName || !productSize || !quantity || !customerEmail || !total) {
+    console.error('Missing required fields:', {
+      subProductId: !!subProductId,
+      productId: !!productId, 
+      productName: !!productName,
+      productSize: !!productSize,
+      quantity: !!quantity,
+      customerEmail: !!customerEmail,
+      total: !!total
+    });
     return res.status(400).json({ error: 'Missing required fields' });
   }
 

@@ -864,8 +864,13 @@ class PaymentHandler {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create PayPal order');
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('PayPal order creation failed:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorData: errorData
+            });
+            throw new Error(errorData.error || `Server error: ${response.status} ${response.statusText}`);
         }
 
         return await response.json();
