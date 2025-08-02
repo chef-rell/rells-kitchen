@@ -2078,21 +2078,22 @@ app.post('/api/admin/notification-settings', requireAdmin, async (req, res) => {
 
     for (const [key, value] of updates) {
       await pool.query(`
-        INSERT INTO admin_settings (id, setting_key, setting_value, updated_by, updated_at)
-        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        INSERT INTO admin_settings (id, setting_key, setting_value, updated_at)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
         ON CONFLICT (setting_key) 
         DO UPDATE SET 
           setting_value = EXCLUDED.setting_value,
-          updated_by = EXCLUDED.updated_by,
           updated_at = CURRENT_TIMESTAMP
-      `, [uuidv4(), key, value, req.user.id]);
+      `, [uuidv4(), key, value]);
     }
 
     console.log('Admin notification settings saved to database:', req.body);
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     console.error('Error saving notification settings:', error);
-    res.status(500).json({ error: 'Failed to save settings' });
+    console.error('Error details:', error.message);
+    console.error('User object:', req.user);
+    res.status(500).json({ error: 'Failed to save settings', details: error.message });
   }
 });
 
@@ -2118,20 +2119,21 @@ app.post('/api/admin/stock-threshold', requireAdmin, async (req, res) => {
 
     // Update threshold in database using UPSERT
     await pool.query(`
-      INSERT INTO admin_settings (id, setting_key, setting_value, updated_by, updated_at)
-      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      INSERT INTO admin_settings (id, setting_key, setting_value, updated_at)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
       ON CONFLICT (setting_key) 
       DO UPDATE SET 
         setting_value = EXCLUDED.setting_value,
-        updated_by = EXCLUDED.updated_by,
         updated_at = CURRENT_TIMESTAMP
-    `, [uuidv4(), 'low_stock_threshold', threshold.toString(), req.user.id]);
+    `, [uuidv4(), 'low_stock_threshold', threshold.toString()]);
 
     console.log('Stock threshold updated to:', threshold);
     res.json({ success: true, message: 'Stock threshold updated successfully' });
   } catch (error) {
     console.error('Error updating stock threshold:', error);
-    res.status(500).json({ error: 'Failed to update threshold' });
+    console.error('Error details:', error.message);
+    console.error('User object:', req.user);
+    res.status(500).json({ error: 'Failed to update threshold', details: error.message });
   }
 });
 
