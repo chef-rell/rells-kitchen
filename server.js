@@ -68,10 +68,13 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // PostgreSQL connection  
+console.log('🔍 All environment variables:');
+Object.keys(process.env).filter(key => key.includes('DATABASE')).forEach(key => {
+  console.log(`🔍 ${key}:`, process.env[key] ? 'SET (length: ' + process.env[key].length + ')' : 'NOT SET');
+});
+
 const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
-console.log('🔍 DATABASE_PUBLIC_URL:', process.env.DATABASE_PUBLIC_URL ? 'SET' : 'NOT SET');
-console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-console.log('🔍 Using connection string:', connectionString ? 'FOUND' : 'MISSING');
+console.log('🔍 Final connection string length:', connectionString ? connectionString.length : 'NONE');
 
 const pool = new Pool({
   connectionString: connectionString,
