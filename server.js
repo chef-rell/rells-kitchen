@@ -2040,14 +2040,20 @@ app.get('/api/admin/inventory', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/notification-settings', requireAdmin, async (req, res) => {
   try {
-    // For now, return default settings. In production, store in database
+    // Load settings from database
+    const settingsResult = await pool.query('SELECT setting_key, setting_value FROM admin_settings');
+    const settingsMap = {};
+    settingsResult.rows.forEach(row => {
+      settingsMap[row.setting_key] = row.setting_value;
+    });
+
     const settings = {
-      email: 'admin@rellskitchen.com',
-      phone: '+15017609490',
-      emailNewOrders: true,
-      emailLowStock: true,
-      smsCritical: true,
-      smsOutOfStock: false
+      email: settingsMap['admin_email'] || 'admin@rellskitchen.com',
+      phone: settingsMap['admin_phone'] || '+15017609490',
+      emailNewOrders: settingsMap['email_new_orders'] === 'true',
+      emailLowStock: settingsMap['email_low_stock'] === 'true',
+      smsCritical: settingsMap['sms_critical_alerts'] === 'true',
+      smsOutOfStock: settingsMap['sms_out_of_stock'] === 'true'
     };
     res.json(settings);
   } catch (error) {
@@ -2058,12 +2064,64 @@ app.get('/api/admin/notification-settings', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/notification-settings', requireAdmin, async (req, res) => {
   try {
-    // For now, just acknowledge. In production, save to database
-    console.log('Admin notification settings updated:', req.body);
+    const { email, phone, emailNewOrders, emailLowStock, smsCritical, smsOutOfStock } = req.body;
+    
+    // Update settings in database
+    const updates = [
+      ['admin_email', email],
+      ['admin_phone', phone],
+      ['email_new_orders', emailNewOrders.toString()],
+      ['email_low_stock', emailLowStock.toString()],
+      ['sms_critical_alerts', smsCritical.toString()],
+      ['sms_out_of_stock', smsOutOfStock.toString()]
+    ];
+
+    for (const [key, value] of updates) {
+      await pool.query(
+        'UPDATE admin_settings SET setting_value = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP WHERE setting_key = $3',
+        [value, req.user.id, key]
+      );
+    }
+
+    console.log('Admin notification settings saved to database:', req.body);
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     console.error('Error saving notification settings:', error);
     res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
+// Stock threshold endpoints
+app.get('/api/admin/stock-threshold', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT setting_value FROM admin_settings WHERE setting_key = $1', ['low_stock_threshold']);
+    const threshold = result.rows.length > 0 ? result.rows[0].setting_value : '5';
+    res.json({ threshold: parseInt(threshold) });
+  } catch (error) {
+    console.error('Error getting stock threshold:', error);
+    res.status(500).json({ error: 'Failed to get threshold' });
+  }
+});
+
+app.post('/api/admin/stock-threshold', requireAdmin, async (req, res) => {
+  try {
+    const { threshold } = req.body;
+    
+    if (!threshold || isNaN(threshold)) {
+      return res.status(400).json({ error: 'Valid threshold number required' });
+    }
+
+    // Update threshold in database
+    await pool.query(
+      'UPDATE admin_settings SET setting_value = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP WHERE setting_key = $3',
+      [threshold.toString(), req.user.id, 'low_stock_threshold']
+    );
+
+    console.log('Stock threshold updated to:', threshold);
+    res.json({ success: true, message: 'Stock threshold updated successfully' });
+  } catch (error) {
+    console.error('Error updating stock threshold:', error);
+    res.status(500).json({ error: 'Failed to update threshold' });
   }
 });
 

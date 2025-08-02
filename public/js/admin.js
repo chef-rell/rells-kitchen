@@ -208,15 +208,27 @@ class AdminDashboard {
 
     async loadInventory() {
         try {
-            const response = await fetch('/api/admin/inventory', {
-                credentials: 'include'
-            });
+            const [inventoryResponse, settingsResponse] = await Promise.all([
+                fetch('/api/admin/inventory', { credentials: 'include' }),
+                fetch('/api/admin/notification-settings', { credentials: 'include' })
+            ]);
             
-            if (response.ok) {
-                this.inventory = await response.json();
-                this.renderInventory();
+            if (inventoryResponse.ok) {
+                this.inventory = await inventoryResponse.json();
+                await this.renderInventory();
             } else {
                 throw new Error('Failed to load inventory');
+            }
+
+            // Load current threshold from settings
+            if (settingsResponse.ok) {
+                const settings = await settingsResponse.json();
+                const thresholdInput = document.getElementById('low-stock-threshold');
+                if (thresholdInput) {
+                    // Get current threshold from database settings
+                    const currentThreshold = await this.getCurrentThreshold();
+                    thresholdInput.value = currentThreshold || '5';
+                }
             }
         } catch (error) {
             console.error('Error loading inventory:', error);
@@ -228,7 +240,7 @@ class AdminDashboard {
         }
     }
 
-    renderInventory() {
+    async renderInventory() {
         const inventoryList = document.getElementById('inventory-list');
         
         if (this.inventory.length === 0) {
@@ -240,9 +252,13 @@ class AdminDashboard {
             return;
         }
 
+        // Get current threshold for dynamic status calculation
+        const currentThreshold = parseInt(await this.getCurrentThreshold()) || 5;
+        const mediumThreshold = currentThreshold * 2;
+
         const inventoryHTML = this.inventory.map(item => {
-            const stockClass = item.inventory_count <= 5 ? 'status-failed' : 
-                             item.inventory_count <= 10 ? 'status-processing' : 'status-completed';
+            const stockClass = item.inventory_count <= currentThreshold ? 'status-failed' : 
+                             item.inventory_count <= mediumThreshold ? 'status-processing' : 'status-completed';
             
             return `
                 <div class="orders-item">
@@ -253,14 +269,30 @@ class AdminDashboard {
                     <div class="order-details">
                         <p><strong>Price:</strong> $${parseFloat(item.price).toFixed(2)}</p>
                         <p><strong>Size:</strong> ${item.size_oz}oz</p>
-                        <p><strong>Status:</strong> ${item.inventory_count <= 5 ? 'LOW STOCK' : 
-                                                   item.inventory_count <= 10 ? 'MEDIUM STOCK' : 'IN STOCK'}</p>
+                        <p><strong>Status:</strong> ${item.inventory_count <= currentThreshold ? 'LOW STOCK' : 
+                                                   item.inventory_count <= mediumThreshold ? 'MEDIUM STOCK' : 'IN STOCK'}</p>
                     </div>
                 </div>
             `;
         }).join('');
 
         inventoryList.innerHTML = inventoryHTML;
+    }
+
+    async getCurrentThreshold() {
+        try {
+            const response = await fetch('/api/admin/stock-threshold', {
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                return data.threshold.toString();
+            }
+            return '5';
+        } catch (error) {
+            console.error('Error getting current threshold:', error);
+            return '5';
+        }
     }
 
     async updateStockThreshold() {
@@ -277,7 +309,7 @@ class AdminDashboard {
 
             if (response.ok) {
                 alert('Stock threshold updated successfully');
-                await this.loadInventory();
+                await this.renderInventory(); // Re-render with new threshold
             } else {
                 throw new Error('Failed to update threshold');
             }

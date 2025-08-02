@@ -32,7 +32,8 @@
       "Bash(start /b:*)",
       "WebFetch(domain:rells-kitchen-production.up.railway.app)",
       "WebFetch(domain:developer.usps.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(railway logs:*)"
     ],
     "deny": []
   }

@@ -148,6 +148,34 @@ async function initializePostgreSQL() {
       )
     `);
 
+    // Create admin_settings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_settings (
+        id TEXT PRIMARY KEY,
+        setting_key TEXT UNIQUE NOT NULL,
+        setting_value TEXT NOT NULL,
+        setting_type TEXT DEFAULT 'string',
+        description TEXT,
+        updated_by TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (updated_by) REFERENCES users (id)
+      )
+    `);
+
+    // Insert default admin settings
+    await pool.query(`
+      INSERT INTO admin_settings (id, setting_key, setting_value, setting_type, description)
+      VALUES 
+        ('admin-email', 'admin_email', 'admin@rellskitchen.com', 'string', 'Admin email for notifications'),
+        ('admin-phone', 'admin_phone', '+15017609490', 'string', 'Admin phone for SMS alerts'),
+        ('email-new-orders', 'email_new_orders', 'true', 'boolean', 'Send email for new orders'),
+        ('email-low-stock', 'email_low_stock', 'true', 'boolean', 'Send email for low stock alerts'),
+        ('sms-critical', 'sms_critical_alerts', 'true', 'boolean', 'Send SMS for critical alerts'),
+        ('sms-out-of-stock', 'sms_out_of_stock', 'false', 'boolean', 'Send SMS for out of stock alerts'),
+        ('low-stock-threshold', 'low_stock_threshold', '5', 'number', 'Low stock alert threshold')
+      ON CONFLICT (setting_key) DO NOTHING
+    `);
+
     // Create recipes table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS recipes (
