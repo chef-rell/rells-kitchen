@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Rell's Kitchen</title>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="shortcut icon" href="/favicon.ico">
+    
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="cyber-grid"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1 class="brand-title">RELL'S <span class="usvi-accent">KITCHEN</span></h1>
+                <p class="brand-subtitle">Caribbean • Cyberpunk • Fusion</p>
+            </div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">← Back to Menu</a>
+                <a href="/account" class="nav-link">Account</a>
+                <button id="auth-btn" class="auth-btn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <section class="menu-section">
+        <video class="menu-background-video" autoplay muted>
+            <source src="/images/palm-trees-and-futuristic-neon-lit-cabanas-glow-on-a-tropical-beach_preview.mp4" type="video/mp4">
+        </video>
+        <div class="container">
+            <div id="admin-content" style="display: none;">
+                <h2 class="section-title">Admin <span class="usvi-accent">Dashboard</span></h2>
+                
+                <div class="account-tabs">
+                    <button class="tab-btn active" data-tab="orders">Order Management</button>
+                    <button class="tab-btn" data-tab="inventory">Inventory</button>
+                    <button class="tab-btn" data-tab="notifications">Notifications</button>
+                    <button class="tab-btn" data-tab="settings">Settings</button>
+                </div>
+
+                <div class="tab-content">
+                    <!-- Orders Tab -->
+                    <div id="orders-tab" class="tab-panel active">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <h3 class="product-name">ORDER MANAGEMENT</h3>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <div class="form-row" style="margin-bottom: 20px;">
+                                    <div class="input-group">
+                                        <select id="order-status-filter" class="size-dropdown">
+                                            <option value="">All Orders</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="processing">Processing</option>
+                                            <option value="failed">Failed</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
+                                        <label>Filter by Status</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="date" id="order-date-filter">
+                                        <label>Filter by Date</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <button id="refresh-orders" class="submit-btn">Refresh Orders</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="orders-list">
+                                    <div style="text-align: center; padding: 20px; color: var(--text-light);">
+                                        Loading orders...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Tab -->
+                    <div id="inventory-tab" class="tab-panel">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <h3 class="product-name">INVENTORY MANAGEMENT</h3>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <div class="form-row" style="margin-bottom: 20px;">
+                                    <div class="input-group">
+                                        <input type="number" id="low-stock-threshold" placeholder="5">
+                                        <label>Low Stock Alert Threshold</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <button id="update-threshold" class="submit-btn">Update Threshold</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="inventory-list">
+                                    <div style="text-align: center; padding: 20px; color: var(--text-light);">
+                                        Loading inventory...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Tab -->
+                    <div id="notifications-tab" class="tab-panel">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <h3 class="product-name">NOTIFICATION SETTINGS</h3>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <div class="form-row">
+                                    <div class="input-group full-width">
+                                        <input type="email" id="admin-email" placeholder="admin@rellskitchen.com">
+                                        <label>Admin Email for Notifications</label>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group full-width">
+                                        <input type="tel" id="admin-phone" placeholder="+15017609490">
+                                        <label>Admin Phone for SMS Alerts</label>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="email-new-orders" checked>
+                                            <span class="checkmark"></span>
+                                            Email for New Orders
+                                        </label>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="email-low-stock" checked>
+                                            <span class="checkmark"></span>
+                                            Email for Low Stock
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="sms-critical-alerts" checked>
+                                            <span class="checkmark"></span>
+                                            SMS for Critical Alerts
+                                        </label>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" id="sms-out-of-stock">
+                                            <span class="checkmark"></span>
+                                            SMS for Out of Stock
+                                        </label>
+                                    </div>
+                                </div>
+                                <button id="save-notification-settings" class="submit-btn">Save Settings</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div id="settings-tab" class="tab-panel">
+                        <div class="product-card">
+                            <div class="product-header">
+                                <h3 class="product-name">ADMIN SETTINGS</h3>
+                            </div>
+                            <div class="card-content" style="padding: 25px;">
+                                <div class="form-row">
+                                    <div class="input-group">
+                                        <button id="test-email" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan);">
+                                            Test Email Notifications
+                                        </button>
+                                    </div>
+                                    <div class="input-group">
+                                        <button id="test-sms" class="submit-btn" style="background: rgba(0, 245, 255, 0.1); border: 1px solid var(--neon-cyan);">
+                                            Test SMS Notifications
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group full-width">
+                                        <textarea id="system-status" readonly style="height: 100px; resize: vertical; overflow-y: auto;">System Status: All systems operational
+Database: Connected
+USPS API: Active
+PayPal API: Active
+Email Service: Ready
+SMS Service: Ready</textarea>
+                                        <label>System Status</label>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="input-group">
+                                        <button id="export-orders" class="submit-btn">Export Orders (CSV)</button>
+                                    </div>
+                                    <div class="input-group">
+                                        <button id="backup-data" class="submit-btn">Backup Database</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Denied Content -->
+            <div id="access-denied" style="display: none;">
+                <h2 class="section-title">Access <span class="usvi-accent">Denied</span></h2>
+                <div class="product-card">
+                    <div class="product-header">
+                        <h3 class="product-name">ADMINISTRATOR ACCESS REQUIRED</h3>
+                    </div>
+                    <div class="card-content" style="padding: 25px; text-align: center;">
+                        <div style="font-size: 3em; margin-bottom: 20px; color: var(--error-red);">🚫</div>
+                        <h3 style="color: var(--error-red); margin-bottom: 20px;">Access Denied</h3>
+                        <p style="color: var(--text-light); margin-bottom: 20px;">
+                            You do not have administrator privileges to access this page.
+                        </p>
+                        <a href="/" class="submit-btn">Return to Menu</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Content -->
+            <div id="loading-content">
+                <h2 class="section-title">Loading <span class="usvi-accent">Dashboard</span></h2>
+                <div class="product-card">
+                    <div class="product-header">
+                        <h3 class="product-name">VERIFYING ACCESS</h3>
+                    </div>
+                    <div class="card-content" style="padding: 25px; text-align: center;">
+                        <div style="width: 40px; height: 40px; border: 4px solid rgba(0, 245, 255, 0.3); border-top-color: var(--neon-cyan); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                        <p style="color: var(--text-light);">Verifying administrator access...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>RELL'S KITCHEN</h3>
+                    <p>Neo-Caribbean Fusion • Est. 2157</p>
+                </div>
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h4>Admin Dashboard</h4>
+                        <div class="about-description">🔒 Secure Access Only<br>📊 Order Management<br>📦 Inventory Control</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2157 Rell's Kitchen. All rights reserved. | Powered by Kaiel™</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/admin.js"></script>
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 0.9em;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .orders-item {
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: rgba(0, 245, 255, 0.05);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .order-id {
+            font-weight: bold;
+            color: var(--neon-cyan);
+        }
+        
+        .order-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .status-completed { background: var(--success-green); color: black; }
+        .status-processing { background: var(--warning-amber); color: black; }
+        .status-failed { background: var(--error-red); color: white; }
+        .status-cancelled { background: #666; color: white; }
+    </style>
+</body>
+</html>

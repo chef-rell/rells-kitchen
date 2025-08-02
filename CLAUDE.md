@@ -95,11 +95,27 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
   - `/api/capture-paypal-payment` - Payment capture handling
 - **Status**: Production-ready with proper error handling
 
+## Admin Management System (2025-08-02) - IN PROGRESS
+**NEXT MAJOR FEATURE**: Comprehensive admin dashboard and notification system
+- **Admin Page**: Account page styling with order management dashboard
+- **Access Control**: Database-only admin permissions (role='admin' in users table)
+- **Order Management**: View all orders (attempted, completed, failed status tracking)
+- **Inventory Tracking**: Real-time stock levels with low inventory alerts
+- **Notifications**: 
+  - Email alerts for low stock and completed orders
+  - SMS notifications for critical admin alerts
+  - Multi-admin notification distribution
+- **Security**: Admin-only route protection middleware
+- **Database Schema**: Extend orders/products tables for inventory tracking
+
 ## Known Issues / TODO
 - [x] Execute database update for product name change (reverted approach)
 - [x] USPS OAuth integration with activated account (COMPLETED)
 - [x] Tax calculation system with Arkansas compliance (COMPLETED)  
 - [x] PayPal redirect flow integration (COMPLETED)
+- [x] Free local pickup shipping option (COMPLETED)
+- [x] PayPal payment capture database fixes (COMPLETED)
+- [ ] **CURRENT**: Build admin management system with notifications
 - [ ] Rotate exposed PostgreSQL credentials  
 - [ ] Fix product display issue on live site
 - [ ] Plan proper product name change for later
@@ -117,3 +133,9 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)
 - **Admin Access**: Add `?key=rells-kitchen-admin-2025` to admin endpoints
 - **USPS Test**: `curl -X POST http://localhost:3001/api/calculate-shipping -H "Content-Type: application/json" -d '{"zipCode":"10001","productSize":"medium","quantity":2}'`
+
+## Memory
+
+### Project Memories
+- Added memory
+- Memory added

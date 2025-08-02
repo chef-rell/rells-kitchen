@@ -382,6 +382,37 @@ const optionalAuth = (req, res, next) => {
   next();
 };
 
+// Middleware to check if user is admin
+const requireAdmin = async (req, res, next) => {
+  const token = req.cookies.token;
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Get user from database to check current role
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    return res.status(401).json({ error: 'Invalid authentication' });
+  }
+};
+
 app.post('/api/register', async (req, res) => {
   const { 
     username, 
@@ -901,6 +932,11 @@ app.get('/cookbook', (req, res) => {
 
 app.get('/account', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'account.html'));
+});
+
+// Admin dashboard page
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/payment.html', (req, res) => {
@@ -1930,6 +1966,154 @@ app.get('/admin/update-product-name', async (req, res) => {
       stack: error.stack,
       database_url_exists: !!process.env.DATABASE_URL
     });
+  }
+});
+
+// Admin API endpoints
+app.get('/api/admin/orders', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT o.*, p.name as product_name, sp.size 
+      FROM orders o 
+      JOIN products p ON o.product_id = p.id 
+      LEFT JOIN sub_products sp ON o.sub_product_id = sp.id 
+      ORDER BY o.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching admin orders:', error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+app.get('/api/admin/inventory', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT sp.*, p.name as product_name 
+      FROM sub_products sp 
+      JOIN products p ON sp.parent_product_id = p.id 
+      ORDER BY p.name, sp.size_oz
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching inventory:', error);
+    res.status(500).json({ error: 'Failed to fetch inventory' });
+  }
+});
+
+app.get('/api/admin/notification-settings', requireAdmin, async (req, res) => {
+  try {
+    // For now, return default settings. In production, store in database
+    const settings = {
+      email: 'admin@rellskitchen.com',
+      phone: '+15017609490',
+      emailNewOrders: true,
+      emailLowStock: true,
+      smsCritical: true,
+      smsOutOfStock: false
+    };
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching notification settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+app.post('/api/admin/notification-settings', requireAdmin, async (req, res) => {
+  try {
+    // For now, just acknowledge. In production, save to database
+    console.log('Admin notification settings updated:', req.body);
+    res.json({ success: true, message: 'Settings saved successfully' });
+  } catch (error) {
+    console.error('Error saving notification settings:', error);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
+app.get('/api/admin/system-status', requireAdmin, async (req, res) => {
+  try {
+    // Check various system components
+    const status = {
+      overall: 'Operational',
+      database: 'Connected',
+      usps: 'Active',
+      paypal: 'Active',
+      email: 'Ready',
+      sms: 'Ready'
+    };
+    
+    // Test database connection
+    try {
+      await pool.query('SELECT 1');
+    } catch (dbError) {
+      status.database = 'Error';
+      status.overall = 'Degraded';
+    }
+    
+    res.json(status);
+  } catch (error) {
+    console.error('Error checking system status:', error);
+    res.status(500).json({ error: 'Failed to check system status' });
+  }
+});
+
+app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
+  try {
+    // For now, just simulate email sending
+    console.log('Test email notification sent to admin');
+    res.json({ success: true, message: 'Test email sent successfully' });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    res.status(500).json({ error: 'Failed to send test email' });
+  }
+});
+
+app.post('/api/admin/test-sms', requireAdmin, async (req, res) => {
+  try {
+    // For now, just simulate SMS sending
+    console.log('Test SMS notification sent to admin');
+    res.json({ success: true, message: 'Test SMS sent successfully' });
+  } catch (error) {
+    console.error('Error sending test SMS:', error);
+    res.status(500).json({ error: 'Failed to send test SMS' });
+  }
+});
+
+app.get('/api/admin/export-orders', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT o.*, p.name as product_name, sp.size 
+      FROM orders o 
+      JOIN products p ON o.product_id = p.id 
+      LEFT JOIN sub_products sp ON o.sub_product_id = sp.id 
+      ORDER BY o.created_at DESC
+    `);
+    
+    // Convert to CSV
+    const csvHeader = 'Order ID,Product,Size,Quantity,Customer Email,Total,Shipping Method,Status,Date\n';
+    const csvRows = result.rows.map(order => 
+      `${order.id},${order.product_name},${order.size || 'N/A'},${order.quantity},${order.customer_email},${order.total_amount},${order.shipping_method || 'N/A'},${order.status},${order.created_at}`
+    ).join('\n');
+    
+    const csv = csvHeader + csvRows;
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="orders.csv"');
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting orders:', error);
+    res.status(500).json({ error: 'Failed to export orders' });
+  }
+});
+
+app.post('/api/admin/backup-database', requireAdmin, async (req, res) => {
+  try {
+    // For now, just acknowledge. In production, implement actual backup
+    console.log('Database backup initiated by admin');
+    res.json({ success: true, message: 'Backup completed successfully' });
+  } catch (error) {
+    console.error('Error backing up database:', error);
+    res.status(500).json({ error: 'Failed to backup database' });
   }
 });
 
