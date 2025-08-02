@@ -955,9 +955,21 @@ app.post('/api/calculate-shipping', optionalAuth, async (req, res) => {
     
     console.log('USPS OAuth rates calculated:', shippingRates);
     
+    // Add local pickup option to USPS rates
+    const ratesWithPickup = [
+      {
+        service: 'LOCAL_PICKUP',
+        name: 'Local Pickup',
+        cost: 0.00,
+        deliveryTime: 'Next business day',
+        description: 'Local Pickup - FREE (North Little Rock, AR)'
+      },
+      ...shippingRates
+    ];
+    
     res.json({ 
       success: true,
-      rates: shippingRates,
+      rates: ratesWithPickup,
       packageInfo: {
         weight: weight,
         dimensions: dimensions
@@ -969,6 +981,13 @@ app.post('/api/calculate-shipping', optionalAuth, async (req, res) => {
     
     // Fallback to static rates if USPS API fails
     const fallbackRates = [
+      {
+        service: 'LOCAL_PICKUP',
+        name: 'Local Pickup',
+        cost: 0.00,
+        deliveryTime: 'Next business day',
+        description: 'Local Pickup - FREE (North Little Rock, AR)'
+      },
       {
         service: 'GROUND_ADVANTAGE',
         name: 'Ground Advantage',
@@ -1030,9 +1049,27 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
     let shippingRates = [];
     try {
       shippingRates = await uspsIntegration.calculateShippingRates(fromZip, zipCode, weight, dimensions);
+      // Add local pickup option to USPS rates
+      shippingRates = [
+        {
+          service: 'LOCAL_PICKUP',
+          name: 'Local Pickup',
+          cost: 0.00,
+          deliveryTime: 'Next business day',
+          description: 'Local Pickup - FREE (North Little Rock, AR)'
+        },
+        ...shippingRates
+      ];
     } catch (shippingError) {
       console.warn('USPS OAuth shipping calculation failed, using fallback rates:', shippingError.message);
       shippingRates = [
+        {
+          service: 'LOCAL_PICKUP',
+          name: 'Local Pickup',
+          cost: 0.00,
+          deliveryTime: 'Next business day',
+          description: 'Local Pickup - FREE (North Little Rock, AR)'
+        },
         { service: 'STANDARD', name: 'Standard Shipping', cost: 12.50, deliveryTime: '3-5 business days', description: 'Standard Shipping (3-5 business days) - $12.50' },
         { service: 'EXPEDITED', name: 'Expedited Shipping', cost: 25.00, deliveryTime: '1-2 business days', description: 'Expedited Shipping (1-2 business days) - $25.00' }
       ];
