@@ -232,13 +232,17 @@ class PaymentHandler {
                 this.shippingZip = this.currentUser.address_zip;
                 console.log('Auto-populated ZIP code for logged-in user:', this.currentUser.address_zip);
                 
-                // Auto-calculate shipping rates if valid ZIP
+                // Auto-calculate shipping rates if valid ZIP and product is loaded
                 if (this.isValidZipCode(this.currentUser.address_zip) && this.selectedSubProduct) {
                     console.log('Triggering shipping calculation for auto-populated ZIP');
+                    // Clear the placeholder text first
+                    const shippingSelect = document.getElementById('shipping-method');
+                    if (shippingSelect) {
+                        shippingSelect.innerHTML = '<option value="" disabled selected>Loading shipping options...</option>';
+                    }
+                    
                     // Trigger the shipping calculation
                     await this.calculateShippingRates();
-                    // Also update total price with tax calculation
-                    await this.updateTotalPrice();
                 }
             }
         }
@@ -275,8 +279,9 @@ class PaymentHandler {
             this.quantity = 1;
             document.getElementById('quantity').value = this.quantity;
             await this.updateProductDetails();
-            // Calculate initial shipping cost
-            this.calculateShippingCost();
+            
+            // Now that product is loaded, trigger ZIP population and shipping calculation
+            await this.populateUserZip();
         }
     }
     
