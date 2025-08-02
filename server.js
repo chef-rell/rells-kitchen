@@ -2052,6 +2052,114 @@ app.get('/admin/update-product-name', async (req, res) => {
   }
 });
 
+// TEMPORARY: Admin key-based email test endpoint
+app.post('/admin/test-email', async (req, res) => {
+  const adminKey = req.query.key;
+  const validKey = 'rells-kitchen-admin-2025';
+  
+  if (adminKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  
+  try {
+    console.log('🧪 Starting admin key-based email test...');
+    
+    // Direct environment variable check
+    console.log('📧 Direct env check - SMTP_EMAIL:', !!process.env.SMTP_EMAIL);
+    console.log('📧 Direct env check - SMTP_PASSWORD:', !!process.env.SMTP_PASSWORD);
+    console.log('📧 SMTP_EMAIL value:', process.env.SMTP_EMAIL);
+    console.log('📧 SMTP_PASSWORD length:', process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.length : 0);
+    
+    // Get admin email from settings
+    const emailResult = await pool.query('SELECT setting_value FROM admin_settings WHERE setting_key = $1', ['admin_email']);
+    const adminEmail = emailResult.rows.length > 0 ? emailResult.rows[0].setting_value : 'admin@rellskitchen.com';
+    
+    // Create transporter directly (bypass notification service)
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+      throw new Error('SMTP credentials not found in environment variables');
+    }
+    
+    console.log('📧 Creating direct Gmail transporter...');
+    const nodemailer = require('nodemailer');
+    
+    const transporter = nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD
+      }
+    });
+    
+    console.log('📧 Transporter created successfully');
+    console.log('📧 Sending test email to:', adminEmail);
+    
+    const mailOptions = {
+      from: process.env.SMTP_EMAIL,
+      to: adminEmail,
+      subject: '🧪 Admin Key Test Email - Rell\'s Kitchen',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #00f5ff;">🏝️ Rell's Kitchen Admin Test</h2>
+          <p>This is a test email sent using the admin key endpoint.</p>
+          <p><strong>Test Details:</strong></p>
+          <ul>
+            <li>Sent: ${new Date().toLocaleString()}</li>
+            <li>Method: Admin key authentication</li>
+            <li>Status: ✅ Working</li>
+            <li>From: ${process.env.SMTP_EMAIL}</li>
+            <li>To: ${adminEmail}</li>
+          </ul>
+          <p style="color: #666; font-size: 12px;">
+            Caribbean • Cyberpunk • Fusion<br>
+            Neo-Caribbean cuisine from the future
+          </p>
+        </div>
+      `
+    };
+    
+    console.log('📧 Attempting to send email via Gmail SMTP...');
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✅ Admin key test email sent successfully:', result.messageId);
+    
+    res.json({ 
+      success: true, 
+      messageId: result.messageId,
+      to: adminEmail,
+      from: process.env.SMTP_EMAIL,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Admin key email test error:', error.message);
+    console.error('❌ Full error:', error);
+    
+    // Provide specific error messages for common Gmail issues
+    let errorMessage = error.message;
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Gmail authentication failed - check app password';
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'Gmail SMTP server not found - check internet connection';
+    } else if (error.responseCode === 535) {
+      errorMessage = 'Gmail login failed - invalid email or app password';
+    } else if (error.responseCode === 534) {
+      errorMessage = 'Gmail requires app-specific password - regular password not allowed';
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to send admin key test email', 
+      details: errorMessage,
+      code: error.code,
+      responseCode: error.responseCode,
+      envStatus: {
+        smtpEmail: !!process.env.SMTP_EMAIL,
+        smtpPassword: !!process.env.SMTP_PASSWORD,
+        emailValue: process.env.SMTP_EMAIL,
+        passwordLength: process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.length : 0
+      }
+    });
+  }
+});
+
 // Admin API endpoints
 app.get('/api/admin/orders', requireAdmin, async (req, res) => {
   try {
