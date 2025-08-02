@@ -23,7 +23,7 @@ class NotificationService {
       if (process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD) {
         console.log('📧 Creating Gmail transporter...');
         
-        this.emailTransporter = nodemailer.createTransporter({
+        this.emailTransporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
             user: process.env.SMTP_EMAIL,

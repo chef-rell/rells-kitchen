@@ -2082,7 +2082,7 @@ app.post('/admin/test-email', async (req, res) => {
     
     console.log('📧 Creating direct Gmail transporter...');
     
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.SMTP_EMAIL,
@@ -2411,7 +2411,7 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
     
     console.log('📧 Creating direct Gmail transporter...');
     
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.SMTP_EMAIL,
