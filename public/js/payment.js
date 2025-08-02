@@ -224,27 +224,48 @@ class PaymentHandler {
 
     async populateUserZip() {
         const zipField = document.getElementById('shipping-zip');
+        const shippingSelect = document.getElementById('shipping-method');
         
-        if (zipField && this.currentUser && this.currentUser.address_zip && this.currentUser.role !== 'guest') {
+        // Ensure all required elements and data are available
+        if (zipField && shippingSelect && this.currentUser && this.currentUser.address_zip && 
+            this.currentUser.role !== 'guest' && this.selectedSubProduct) {
+            
             // Only populate if the field is empty to avoid overwriting user input
             if (!zipField.value.trim()) {
+                console.log('Auto-populating ZIP and triggering shipping calculation...');
+                
+                // Set the ZIP field
                 zipField.value = this.currentUser.address_zip;
                 this.shippingZip = this.currentUser.address_zip;
-                console.log('Auto-populated ZIP code for logged-in user:', this.currentUser.address_zip);
                 
-                // Auto-calculate shipping rates if valid ZIP and product is loaded
-                if (this.isValidZipCode(this.currentUser.address_zip) && this.selectedSubProduct) {
-                    console.log('Triggering shipping calculation for auto-populated ZIP');
-                    // Clear the placeholder text first
-                    const shippingSelect = document.getElementById('shipping-method');
-                    if (shippingSelect) {
-                        shippingSelect.innerHTML = '<option value="" disabled selected>Loading shipping options...</option>';
+                // Clear error styling if any
+                zipField.style.borderColor = '';
+                
+                // Show loading state
+                shippingSelect.innerHTML = '<option value="" disabled selected>🔄 Loading shipping options...</option>';
+                
+                // Auto-calculate shipping rates if valid ZIP
+                if (this.isValidZipCode(this.currentUser.address_zip)) {
+                    console.log('Calculating shipping for ZIP:', this.currentUser.address_zip);
+                    try {
+                        await this.calculateShippingRates();
+                        console.log('Shipping calculation completed successfully');
+                    } catch (error) {
+                        console.error('Shipping calculation failed:', error);
+                        shippingSelect.innerHTML = '<option value="" disabled selected>Enter ZIP code to see shipping options</option>';
                     }
-                    
-                    // Trigger the shipping calculation
-                    await this.calculateShippingRates();
+                } else {
+                    console.log('Invalid ZIP code format:', this.currentUser.address_zip);
                 }
             }
+        } else {
+            console.log('ZIP auto-populate skipped - missing requirements:', {
+                zipField: !!zipField,
+                shippingSelect: !!shippingSelect,
+                currentUser: !!this.currentUser,
+                userZip: !!this.currentUser?.address_zip,
+                selectedSubProduct: !!this.selectedSubProduct
+            });
         }
     }
 
@@ -280,8 +301,10 @@ class PaymentHandler {
             document.getElementById('quantity').value = this.quantity;
             await this.updateProductDetails();
             
-            // Now that product is loaded, trigger ZIP population and shipping calculation
-            await this.populateUserZip();
+            // Add delay to ensure DOM is fully ready, then trigger ZIP population
+            setTimeout(async () => {
+                await this.populateUserZip();
+            }, 1000); // 1 second delay to ensure everything is initialized
         }
     }
     
