@@ -1477,7 +1477,7 @@ app.post('/api/capture-paypal-payment', optionalAuth, async (req, res) => {
     const orderInsertResult = await pool.query(`
       INSERT INTO orders (
         sub_product_id, product_id, customer_email, customer_name, customer_phone,
-        shipping_address_street, shipping_address_city, shipping_address_state, shipping_address_zip,
+        shipping_street, shipping_city, shipping_state, shipping_zip,
         shipping_method, shipping_cost, quantity, total_amount, paypal_order_id, order_notes, 
         coupon_code, coupon_discount, user_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
