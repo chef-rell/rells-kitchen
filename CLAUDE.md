@@ -61,52 +61,57 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Frontend**: Reverted to look for "Tamarind_Splice" to match database
 - **Next Steps**: Investigate JavaScript console logs and deployment issues
 
-### USPS Shipping Integration (2025-08-01) - PARTIALLY COMPLETED
-**STATUS**: USPS integration developed but DISABLED due to account authorization issues
-- **Credentials Added**: Username `76RELLS62U229`, Password `83282077QJ36LYV` 
-- **Issue**: USPS credentials rejected - account needs activation
-- **Current State**: USPS code commented out in server.js to prevent crashes
-- **Files Created**:
-  - `usps-integration.js` - Complete USPS API with 10-minute caching (ready when account activated)
-  - `tax-calculator.js` - Arkansas 3.125% tax rate system (ACTIVE)
-- **Deployment Issue**: Site crashed with USPS integration, so temporarily disabled
-- **Next Steps**: 
-  1. ✅ Complete tax-only deployment (IN PROGRESS)
-  2. Activate USPS Web Tools account later
-  3. Re-enable USPS integration when account works
+### USPS Shipping Integration (2025-08-02) - FULLY OPERATIONAL ✅
+**STATUS**: Complete USPS OAuth 2.0 integration with activated account
+- **Account**: 76RELLS62U229 - ACTIVATED AND WORKING
+- **API**: Migrated from deprecated Web Tools to OAuth 2.0 API
+- **Current State**: Live USPS rates being calculated in real-time
+- **Performance**: 10-minute rate caching + automatic fallback system
+- **Files**:
+  - `usps-oauth-integration.js` - OAuth 2.0 API integration (ACTIVE)
+  - `usps-integration.js` - Legacy Web Tools API (DEPRECATED)
+- **Live Rates**: Ground Advantage ($13.20), Priority Mail ($16.00) for sample ZIP
+- **Environment**: Production OAuth API (apis.usps.com)
 
-### Tax Calculation System (2025-08-01) - IN PROGRESS
-**NEW FEATURE**: Dynamic tax calculation with Arkansas reduced rate
-- **Status**: ✅ Code complete, 🔄 Currently deploying tax-only version
-- **Arkansas Rate**: 3.125% for jams (reduced food rate)
-- **Nexus Management**: Only collects tax where legally required (AR for now)
-- **PayPal Integration**: ✅ Modified to include tax_total in breakdown
-- **API Endpoints**: 
-  - `/api/calculate-order-total` - Combined shipping/tax calculation
-  - Modified `/api/calculate-shipping` to use fallback rates (no USPS)
-- **Current Work**: Removing USPS dependency while keeping tax functionality
-- **Files Modified**: `server.js`, `public/js/payment.js`
+### Tax Calculation System (2025-08-02) - FULLY OPERATIONAL ✅
+**STATUS**: Complete tax system with Arkansas nexus compliance
+- **Arkansas Rate**: 3.125% for food items (reduced rate)
+- **Integration**: Full PayPal breakdown with itemized tax
+- **API Endpoints**:
+  - `/api/calculate-order-total` - Combined shipping/tax/discount calculation
+  - `/api/calculate-shipping` - USPS rates with fallback
+- **Files**: `tax-calculator.js` (ACTIVE)
+- **Coverage**: Arkansas only (legal nexus requirement)
 
-### DEPLOYMENT STATUS (2025-08-01) - COMPLETED ✅
-- **Issue**: Site crashed when USPS integration was deployed
-- **Solution**: Successfully deployed tax-only functionality 
-- **Status**: ✅ LIVE AND WORKING - https://www.rellskitchen.com
-- **Progress**: 
-  - ✅ USPS integration commented out in server.js
-  - ✅ Updated order calculation endpoints to work without USPS
-  - ✅ Tax-only functionality deployed and tested
-  - ✅ Site restored and operational
+### PayPal Payment Integration (2025-08-02) - FULLY OPERATIONAL ✅
+**STATUS**: Complete redirect-flow PayPal integration with tax breakdown
+- **Flow**: Custom redirect flow (replaced SDK buttons for mobile compatibility)
+- **Features**: Tax calculation, shipping integration, discount handling
+- **Pages**: 
+  - `payment-cancel.html` - Cancellation handling
+  - `payment-return.html` - Success processing
+- **API Endpoints**:
+  - `/api/create-paypal-order` - Order creation with tax/shipping breakdown
+  - `/api/capture-paypal-payment` - Payment capture handling
+- **Status**: Production-ready with proper error handling
 
 ## Known Issues / TODO
 - [x] Execute database update for product name change (reverted approach)
+- [x] USPS OAuth integration with activated account (COMPLETED)
+- [x] Tax calculation system with Arkansas compliance (COMPLETED)  
+- [x] PayPal redirect flow integration (COMPLETED)
 - [ ] Rotate exposed PostgreSQL credentials  
 - [ ] Fix product display issue on live site
 - [ ] Plan proper product name change for later
-- [ ] **USPS**: Activate Web Tools account credentials (Account: 76RELLS62U229)
-- [ ] **CURRENT**: Finish tax-only deployment (remove USPS dependencies)
-- [ ] **CURRENT**: Add zip-to-state mapping to tax-calculator.js 
-- [ ] **CURRENT**: Test and deploy working tax system
-- [ ] **LATER**: Re-enable USPS integration when account activated
+
+## Current System Status (2025-08-02) ✅
+**E-COMMERCE PLATFORM**: Fully operational with complete payment processing
+- **Shipping**: Real-time USPS rates via OAuth API + fallback system
+- **Tax**: Arkansas 3.125% compliance with proper nexus management
+- **Payment**: PayPal redirect flow with itemized tax/shipping breakdown
+- **Database**: PostgreSQL production, SQLite local fallback
+- **Security**: JWT auth, rate limiting, environment variables
+- **Performance**: USPS rate caching, optimized database queries
 
 ## Commands
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)
