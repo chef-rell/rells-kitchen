@@ -1107,6 +1107,15 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
   }
 
   try {
+    // Check if PayPal credentials are set
+    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+      console.error('PayPal credentials missing:', {
+        clientId: !!process.env.PAYPAL_CLIENT_ID,
+        clientSecret: !!process.env.PAYPAL_CLIENT_SECRET
+      });
+      throw new Error('PayPal credentials not configured');
+    }
+
     // Get PayPal access token
     const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
       method: 'POST',
@@ -1118,28 +1127,46 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to get PayPal access token');
+      const tokenError = await tokenResponse.text();
+      console.error('PayPal token response error:', tokenError);
+      throw new Error(`Failed to get PayPal access token: ${tokenResponse.status} ${tokenResponse.statusText}`);
     }
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Create PayPal order
-    const subtotal = parseFloat((total - shippingCost - taxAmount + couponDiscount + subscriberDiscount).toFixed(2));
+    // Create PayPal order - fix breakdown calculation
+    // The subtotal should be the original item total before discounts
+    const itemPrice = parseFloat((total - parseFloat(shippingCost || 0) - parseFloat(taxAmount || 0) + parseFloat(couponDiscount || 0) + parseFloat(subscriberDiscount || 0)).toFixed(2));
+    
+    console.log('PayPal breakdown calculation:', {
+      total: parseFloat(total),
+      shippingCost: parseFloat(shippingCost || 0),
+      taxAmount: parseFloat(taxAmount || 0),
+      couponDiscount: parseFloat(couponDiscount || 0),
+      subscriberDiscount: parseFloat(subscriberDiscount || 0),
+      itemPrice: itemPrice,
+      quantity: quantity
+    });
+
+    // Ensure item price is positive
+    if (itemPrice <= 0) {
+      throw new Error(`Invalid item price calculated: ${itemPrice}`);
+    }
     
     const breakdown = {
       item_total: {
         currency_code: "USD",
-        value: subtotal.toFixed(2)
+        value: itemPrice.toFixed(2)
       },
       shipping: {
         currency_code: "USD",
-        value: parseFloat(shippingCost).toFixed(2)
+        value: parseFloat(shippingCost || 0).toFixed(2)
       }
     };
 
     // Add tax to breakdown if applicable
-    if (taxAmount > 0) {
+    if (parseFloat(taxAmount || 0) > 0) {
       breakdown.tax_total = {
         currency_code: "USD",
         value: parseFloat(taxAmount).toFixed(2)
@@ -1147,11 +1174,11 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
     }
 
     // Add discount to breakdown if any discounts are applied
-    const totalDiscountAmount = couponDiscount + subscriberDiscount;
+    const totalDiscountAmount = parseFloat(couponDiscount || 0) + parseFloat(subscriberDiscount || 0);
     if (totalDiscountAmount > 0) {
       breakdown.discount = {
         currency_code: "USD",
-        value: parseFloat(totalDiscountAmount).toFixed(2)
+        value: totalDiscountAmount.toFixed(2)
       };
     }
 
@@ -1168,7 +1195,7 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
           quantity: quantity.toString(),
           unit_amount: {
             currency_code: "USD",
-            value: parseFloat(subtotal / quantity).toFixed(2)
+            value: parseFloat(itemPrice / quantity).toFixed(2)
           }
         }],
         description: `${productName} (${productSize}) x${quantity} - Rell's Kitchen`,
