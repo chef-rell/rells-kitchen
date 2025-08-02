@@ -2160,6 +2160,50 @@ app.post('/admin/test-email', async (req, res) => {
   }
 });
 
+// TEMPORARY: Test main notification service with admin key
+app.post('/admin/test-notification-service', async (req, res) => {
+  const adminKey = req.query.key;
+  const validKey = 'rells-kitchen-admin-2025';
+  
+  if (adminKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  
+  try {
+    console.log('🧪 Testing main NotificationService...');
+    
+    // Check service status
+    const serviceStatus = notificationService.getServiceStatus();
+    console.log('📊 Service status:', serviceStatus);
+    
+    // Get admin email from settings
+    const emailResult = await pool.query('SELECT setting_value FROM admin_settings WHERE setting_key = $1', ['admin_email']);
+    const adminEmail = emailResult.rows.length > 0 ? emailResult.rows[0].setting_value : 'admin@rellskitchen.com';
+    
+    // Try to send email through notification service
+    const result = await notificationService.sendTestEmail(adminEmail);
+    console.log('✅ NotificationService email sent:', result.messageId);
+    
+    res.json({ 
+      success: true, 
+      messageId: result.messageId,
+      serviceStatus: serviceStatus,
+      to: adminEmail,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ NotificationService test error:', error.message);
+    console.error('❌ Full error:', error);
+    
+    res.status(500).json({ 
+      error: 'NotificationService test failed', 
+      details: error.message,
+      serviceStatus: notificationService.getServiceStatus()
+    });
+  }
+});
+
 // Admin API endpoints
 app.get('/api/admin/orders', requireAdmin, async (req, res) => {
   try {
