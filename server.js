@@ -2077,10 +2077,15 @@ app.post('/api/admin/notification-settings', requireAdmin, async (req, res) => {
     ];
 
     for (const [key, value] of updates) {
-      await pool.query(
-        'UPDATE admin_settings SET setting_value = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP WHERE setting_key = $3',
-        [value, req.user.id, key]
-      );
+      await pool.query(`
+        INSERT INTO admin_settings (id, setting_key, setting_value, updated_by, updated_at)
+        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+        ON CONFLICT (setting_key) 
+        DO UPDATE SET 
+          setting_value = EXCLUDED.setting_value,
+          updated_by = EXCLUDED.updated_by,
+          updated_at = CURRENT_TIMESTAMP
+      `, [uuidv4(), key, value, req.user.id]);
     }
 
     console.log('Admin notification settings saved to database:', req.body);
@@ -2111,11 +2116,16 @@ app.post('/api/admin/stock-threshold', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Valid threshold number required' });
     }
 
-    // Update threshold in database
-    await pool.query(
-      'UPDATE admin_settings SET setting_value = $1, updated_by = $2, updated_at = CURRENT_TIMESTAMP WHERE setting_key = $3',
-      [threshold.toString(), req.user.id, 'low_stock_threshold']
-    );
+    // Update threshold in database using UPSERT
+    await pool.query(`
+      INSERT INTO admin_settings (id, setting_key, setting_value, updated_by, updated_at)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+      ON CONFLICT (setting_key) 
+      DO UPDATE SET 
+        setting_value = EXCLUDED.setting_value,
+        updated_by = EXCLUDED.updated_by,
+        updated_at = CURRENT_TIMESTAMP
+    `, [uuidv4(), 'low_stock_threshold', threshold.toString(), req.user.id]);
 
     console.log('Stock threshold updated to:', threshold);
     res.json({ success: true, message: 'Stock threshold updated successfully' });
