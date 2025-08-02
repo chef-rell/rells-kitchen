@@ -1197,7 +1197,8 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
     const accessToken = tokenData.access_token;
 
     // Create PayPal order - fix breakdown calculation
-    // The subtotal should be the original item total before discounts
+    // The item price should be the original item total before discounts
+    // Formula: itemPrice = total - shippingCost - taxAmount + totalDiscountAmount
     const itemPrice = parseFloat((total - parseFloat(shippingCost || 0) - parseFloat(taxAmount || 0) + parseFloat(couponDiscount || 0) + parseFloat(subscriberDiscount || 0)).toFixed(2));
     
     console.log('PayPal breakdown calculation:', {
