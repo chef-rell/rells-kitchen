@@ -1263,19 +1263,14 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
         description: `${productName} (${productSize}) x${quantity} - Rell's Kitchen`,
         custom_id: `${subProductId}_${quantity}_${Date.now()}`
       }],
-      payment_source: {
-        paypal: {
-          experience_context: {
-            payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
-            brand_name: "Rell's Kitchen",
-            locale: "en-US",
-            landing_page: "LOGIN",
-            shipping_preference: "GET_FROM_FILE",
-            user_action: "PAY_NOW",
-            return_url: `${req.protocol}://${req.get('host')}/payment-return`,
-            cancel_url: `${req.protocol}://${req.get('host')}/payment-cancel`
-          }
-        }
+      application_context: {
+        brand_name: "Rell's Kitchen",
+        locale: "en-US",
+        landing_page: "LOGIN",
+        shipping_preference: "GET_FROM_FILE",
+        user_action: "PAY_NOW",
+        return_url: `${req.protocol}://${req.get('host')}/payment-return`,
+        cancel_url: `${req.protocol}://${req.get('host')}/payment-cancel`
       }
     };
 
@@ -1298,11 +1293,13 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
     }
 
     const orderData = await orderResponse.json();
-    console.log('PayPal order created:', orderData);
+    console.log('PayPal order created:', JSON.stringify(orderData, null, 2));
+    console.log('PayPal order links:', orderData.links);
 
     // Find the approval URL
     const approvalUrl = orderData.links?.find(link => link.rel === 'approve')?.href;
     if (!approvalUrl) {
+      console.error('No approval URL found. Available links:', orderData.links?.map(link => ({ rel: link.rel, href: link.href })));
       throw new Error('No approval URL found in PayPal response');
     }
 
