@@ -84,7 +84,7 @@ try {
     database: url.pathname.slice(1), // Remove leading slash
     user: url.username,
     password: url.password,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: false, // Temporarily disable SSL to test
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 30000
   };
@@ -93,7 +93,7 @@ try {
   console.log('🔍 Falling back to connection string');
   poolConfig = {
     connectionString: connectionString,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: false // Temporarily disable SSL to test
   };
 }
 
