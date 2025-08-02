@@ -907,6 +907,15 @@ app.get('/payment.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'payment.html'));
 });
 
+// PayPal redirect flow pages
+app.get('/payment-cancel', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'payment-cancel.html'));
+});
+
+app.get('/payment-return', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'payment-return.html'));
+});
+
 app.get('/test-registration.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'test-registration.html'));
 });
