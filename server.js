@@ -67,37 +67,13 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// PostgreSQL connection  
+// PostgreSQL connection using fresh Postgres-S448 service
 const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
-console.log('🔍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_URL);
-console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
-console.log('🔍 Connection string starts with:', connectionString ? connectionString.substring(0, 50) + '...' : 'NONE');
 
-// Try alternative connection method
-let poolConfig;
-try {
-  // Parse the connection string manually to ensure proper handling
-  const url = new URL(connectionString);
-  poolConfig = {
-    host: url.hostname,
-    port: parseInt(url.port),
-    database: url.pathname.slice(1), // Remove leading slash
-    user: url.username,
-    password: url.password,
-    ssl: false, // Temporarily disable SSL to test
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 30000
-  };
-  console.log('🔍 Using parsed connection config for host:', url.hostname);
-} catch (error) {
-  console.log('🔍 Falling back to connection string');
-  poolConfig = {
-    connectionString: connectionString,
-    ssl: false // Temporarily disable SSL to test
-  };
-}
-
-const pool = new Pool(poolConfig);
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // Test database connection and initialize tables
 pool.connect((err, client, release) => {
