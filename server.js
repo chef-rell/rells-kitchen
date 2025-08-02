@@ -2412,4 +2412,6 @@ app.listen(PORT, () => {
   console.log(`📁  Static files served from: ${path.join(__dirname, 'public')}`);
   console.log(`🚀  Deployment successful at ${new Date().toISOString()}`);
   console.log(`📦  Product: Tamarind_Sweets should be available`);
+  console.log(`📧  SMTP Email configured: ${process.env.SMTP_EMAIL ? 'Yes (' + process.env.SMTP_EMAIL + ')' : 'No'}`);
+  console.log(`📧  SMTP Password configured: ${process.env.SMTP_PASSWORD ? 'Yes' : 'No'}`);
 });
