@@ -73,10 +73,31 @@ console.log('🔍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_UR
 console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
 console.log('🔍 Connection string starts with:', connectionString ? connectionString.substring(0, 50) + '...' : 'NONE');
 
-const pool = new Pool({
-  connectionString: connectionString,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Try alternative connection method
+let poolConfig;
+try {
+  // Parse the connection string manually to ensure proper handling
+  const url = new URL(connectionString);
+  poolConfig = {
+    host: url.hostname,
+    port: parseInt(url.port),
+    database: url.pathname.slice(1), // Remove leading slash
+    user: url.username,
+    password: url.password,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000
+  };
+  console.log('🔍 Using parsed connection config for host:', url.hostname);
+} catch (error) {
+  console.log('🔍 Falling back to connection string');
+  poolConfig = {
+    connectionString: connectionString,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 // Test database connection and initialize tables
 pool.connect((err, client, release) => {
