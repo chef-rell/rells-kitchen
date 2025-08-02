@@ -1078,6 +1078,58 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
   }
 });
 
+// Debug endpoint to test PayPal credentials
+app.get('/api/debug-paypal', async (req, res) => {
+  try {
+    console.log('Testing PayPal credentials...');
+    
+    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+      return res.json({
+        success: false,
+        error: 'PayPal credentials not configured',
+        clientId: !!process.env.PAYPAL_CLIENT_ID,
+        clientSecret: !!process.env.PAYPAL_CLIENT_SECRET
+      });
+    }
+
+    // Test getting access token
+    const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenResponse.ok) {
+      return res.json({
+        success: false,
+        error: 'PayPal token request failed',
+        status: tokenResponse.status,
+        response: tokenData
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'PayPal credentials working',
+      hasAccessToken: !!tokenData.access_token,
+      tokenType: tokenData.token_type,
+      expiresIn: tokenData.expires_in
+    });
+
+  } catch (error) {
+    res.json({
+      success: false,
+      error: 'Debug test failed',
+      details: error.message
+    });
+  }
+});
+
 // Create PayPal order for redirect flow
 app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
   console.log('Creating PayPal order for redirect flow:', req.body);

@@ -868,9 +868,10 @@ class PaymentHandler {
             console.error('PayPal order creation failed:', {
                 status: response.status,
                 statusText: response.statusText,
-                errorData: errorData
+                errorData: errorData,
+                fullErrorData: JSON.stringify(errorData, null, 2)
             });
-            throw new Error(errorData.error || `Server error: ${response.status} ${response.statusText}`);
+            throw new Error(errorData.error || errorData.details || `Server error: ${response.status} ${response.statusText}`);
         }
 
         return await response.json();
