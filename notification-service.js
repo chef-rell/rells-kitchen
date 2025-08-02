@@ -13,18 +13,23 @@ class NotificationService {
 
   initializeEmailService() {
     try {
-      // Use Gmail SMTP or other email service
-      this.emailTransporter = nodemailer.createTransporter({
-        service: 'gmail',
-        auth: {
-          user: process.env.SMTP_EMAIL,
-          pass: process.env.SMTP_PASSWORD // App-specific password for Gmail
-        }
-      });
-      
-      console.log('✅ Email service initialized');
+      // Only initialize if credentials are provided
+      if (process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD) {
+        this.emailTransporter = nodemailer.createTransporter({
+          service: 'gmail',
+          auth: {
+            user: process.env.SMTP_EMAIL,
+            pass: process.env.SMTP_PASSWORD // App-specific password for Gmail
+          }
+        });
+        
+        console.log('✅ Email service initialized');
+      } else {
+        console.log('⚠️ Email service not configured - missing SMTP credentials');
+      }
     } catch (error) {
       console.error('❌ Error initializing email service:', error.message);
+      this.emailTransporter = null;
     }
   }
 

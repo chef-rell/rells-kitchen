@@ -28,8 +28,19 @@ const uspsIntegration = new USPSOAuthIntegration(
 // Initialize tax calculator
 const taxCalculator = new TaxCalculator();
 
-// Initialize notification service
-const notificationService = new NotificationService();
+// Initialize notification service with error handling
+let notificationService;
+try {
+  notificationService = new NotificationService();
+} catch (error) {
+  console.error('❌ Error initializing notification service:', error.message);
+  // Create a fallback notification service that handles errors gracefully
+  notificationService = {
+    sendTestEmail: async () => { throw new Error('Email service not available'); },
+    sendTestSMS: async () => { throw new Error('SMS service not available'); },
+    getServiceStatus: () => ({ email: { configured: false }, sms: { configured: false } })
+  };
+}
 
 // Trust proxy when behind Railway/Heroku/etc reverse proxy
 app.set('trust proxy', 1);
@@ -2304,6 +2315,24 @@ app.post('/api/admin/test-sms', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error sending test SMS:', error);
     res.status(500).json({ error: 'Failed to send test SMS', details: error.message });
+  }
+});
+
+// Health check endpoint for debugging
+app.get('/api/health', (req, res) => {
+  try {
+    const status = {
+      server: 'running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      hasDatabase: !!process.env.DATABASE_URL,
+      hasSmtpEmail: !!process.env.SMTP_EMAIL,
+      hasSmtpPassword: !!process.env.SMTP_PASSWORD,
+      notificationService: notificationService ? 'initialized' : 'failed'
+    };
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
