@@ -2066,7 +2066,10 @@ app.post('/api/admin/notification-settings', requireAdmin, async (req, res) => {
   try {
     const { email, phone, emailNewOrders, emailLowStock, smsCritical, smsOutOfStock } = req.body;
     
-    // Update settings in database
+    console.log('Attempting to save notification settings:', req.body);
+    console.log('User attempting save:', req.user?.username || 'unknown');
+
+    // Update settings in database using simple UPDATE/INSERT pattern
     const updates = [
       ['admin_email', email],
       ['admin_phone', phone],
@@ -2077,21 +2080,32 @@ app.post('/api/admin/notification-settings', requireAdmin, async (req, res) => {
     ];
 
     for (const [key, value] of updates) {
-      await pool.query(`
-        INSERT INTO admin_settings (id, setting_key, setting_value, updated_at)
-        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-        ON CONFLICT (setting_key) 
-        DO UPDATE SET 
-          setting_value = EXCLUDED.setting_value,
-          updated_at = CURRENT_TIMESTAMP
-      `, [uuidv4(), key, value]);
+      console.log(`Updating setting: ${key} = ${value}`);
+      
+      // Try to update first
+      const updateResult = await pool.query(
+        'UPDATE admin_settings SET setting_value = $1, updated_at = CURRENT_TIMESTAMP WHERE setting_key = $2',
+        [value, key]
+      );
+
+      // If no rows updated, insert new record
+      if (updateResult.rowCount === 0) {
+        console.log(`No existing record for ${key}, inserting new`);
+        await pool.query(
+          'INSERT INTO admin_settings (id, setting_key, setting_value, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+          [uuidv4(), key, value]
+        );
+      } else {
+        console.log(`Updated existing record for ${key}`);
+      }
     }
 
-    console.log('Admin notification settings saved to database:', req.body);
+    console.log('Admin notification settings saved successfully');
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     console.error('Error saving notification settings:', error);
     console.error('Error details:', error.message);
+    console.error('Error code:', error.code);
     console.error('User object:', req.user);
     res.status(500).json({ error: 'Failed to save settings', details: error.message });
   }
@@ -2117,23 +2131,80 @@ app.post('/api/admin/stock-threshold', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Valid threshold number required' });
     }
 
-    // Update threshold in database using UPSERT
-    await pool.query(`
+    console.log('Attempting to update stock threshold to:', threshold);
+    console.log('User attempting update:', req.user?.username || 'unknown');
+
+    // First try to update existing record
+    const updateResult = await pool.query(
+      'UPDATE admin_settings SET setting_value = $1, updated_at = CURRENT_TIMESTAMP WHERE setting_key = $2',
+      [threshold.toString(), 'low_stock_threshold']
+    );
+
+    // If no rows were updated, insert new record
+    if (updateResult.rowCount === 0) {
+      console.log('No existing record found, inserting new threshold setting');
+      await pool.query(
+        'INSERT INTO admin_settings (id, setting_key, setting_value, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+        [uuidv4(), 'low_stock_threshold', threshold.toString()]
+      );
+    } else {
+      console.log('Updated existing threshold record');
+    }
+
+    console.log('Stock threshold updated successfully to:', threshold);
+    res.json({ success: true, message: 'Stock threshold updated successfully' });
+  } catch (error) {
+    console.error('Error updating stock threshold:', error);
+    console.error('Error details:', error.message);
+    console.error('Error code:', error.code);
+    console.error('User object:', req.user);
+    res.status(500).json({ error: 'Failed to update threshold', details: error.message });
+  }
+});
+
+// Debug endpoint to test admin_settings table
+app.get('/api/admin/debug-settings', requireAdmin, async (req, res) => {
+  try {
+    // Test if table exists and can be queried
+    const tableCheck = await pool.query(`
+      SELECT table_name, column_name, data_type, is_nullable
+      FROM information_schema.columns 
+      WHERE table_name = 'admin_settings'
+      ORDER BY ordinal_position
+    `);
+    
+    // Get current settings
+    const settingsCheck = await pool.query('SELECT * FROM admin_settings LIMIT 5');
+    
+    // Try a simple insert test
+    const testId = 'debug-test-' + Date.now();
+    const insertTest = await pool.query(`
       INSERT INTO admin_settings (id, setting_key, setting_value, updated_at)
       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
       ON CONFLICT (setting_key) 
       DO UPDATE SET 
         setting_value = EXCLUDED.setting_value,
         updated_at = CURRENT_TIMESTAMP
-    `, [uuidv4(), 'low_stock_threshold', threshold.toString()]);
-
-    console.log('Stock threshold updated to:', threshold);
-    res.json({ success: true, message: 'Stock threshold updated successfully' });
+    `, [testId, 'debug_test', 'test_value']);
+    
+    // Clean up test data
+    await pool.query('DELETE FROM admin_settings WHERE setting_key = $1', ['debug_test']);
+    
+    res.json({
+      success: true,
+      tableStructure: tableCheck.rows,
+      currentSettings: settingsCheck.rows,
+      insertTest: insertTest.rowCount,
+      message: 'Database operations successful'
+    });
   } catch (error) {
-    console.error('Error updating stock threshold:', error);
-    console.error('Error details:', error.message);
-    console.error('User object:', req.user);
-    res.status(500).json({ error: 'Failed to update threshold', details: error.message });
+    console.error('Debug endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Debug test failed', 
+      details: error.message,
+      code: error.code,
+      constraint: error.constraint
+    });
   }
 });
 
