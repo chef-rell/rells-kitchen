@@ -17,8 +17,10 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.5",
     "pg": "^8.16.3",
     "sqlite3": "^5.1.7",
+    "twilio": "^5.8.0",
     "uuid": "^9.0.1",
     "xml2js": "^0.6.2"
   },

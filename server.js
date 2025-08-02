@@ -11,6 +11,7 @@ const path = require('path');
 // const USPSIntegration = require('./usps-integration'); // Old Web Tools API - DEPRECATED
 const USPSOAuthIntegration = require('./usps-oauth-integration'); // New OAuth 2.0 API
 const TaxCalculator = require('./tax-calculator');
+const NotificationService = require('./notification-service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,9 @@ const uspsIntegration = new USPSOAuthIntegration(
 
 // Initialize tax calculator
 const taxCalculator = new TaxCalculator();
+
+// Initialize notification service
+const notificationService = new NotificationService();
 
 // Trust proxy when behind Railway/Heroku/etc reverse proxy
 app.set('trust proxy', 1);
@@ -2238,13 +2242,14 @@ app.get('/api/admin/debug-settings', requireAdmin, async (req, res) => {
 app.get('/api/admin/system-status', requireAdmin, async (req, res) => {
   try {
     // Check various system components
+    const notificationStatus = notificationService.getServiceStatus();
     const status = {
       overall: 'Operational',
       database: 'Connected',
       usps: 'Active',
       paypal: 'Active',
-      email: 'Ready',
-      sms: 'Ready'
+      email: notificationStatus.email.configured ? 'Ready' : 'Not Configured',
+      sms: notificationStatus.sms.configured ? 'Ready' : 'Not Configured'
     };
     
     // Test database connection
@@ -2264,23 +2269,41 @@ app.get('/api/admin/system-status', requireAdmin, async (req, res) => {
 
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
   try {
-    // For now, just simulate email sending
-    console.log('Test email notification sent to admin');
-    res.json({ success: true, message: 'Test email sent successfully' });
+    // Get admin email from settings
+    const emailResult = await pool.query('SELECT setting_value FROM admin_settings WHERE setting_key = $1', ['admin_email']);
+    const adminEmail = emailResult.rows.length > 0 ? emailResult.rows[0].setting_value : null;
+    
+    const result = await notificationService.sendTestEmail(adminEmail);
+    console.log('✅ Test email sent successfully');
+    res.json({ 
+      success: true, 
+      message: 'Test email sent successfully',
+      messageId: result.messageId,
+      recipient: adminEmail
+    });
   } catch (error) {
     console.error('Error sending test email:', error);
-    res.status(500).json({ error: 'Failed to send test email' });
+    res.status(500).json({ error: 'Failed to send test email', details: error.message });
   }
 });
 
 app.post('/api/admin/test-sms', requireAdmin, async (req, res) => {
   try {
-    // For now, just simulate SMS sending
-    console.log('Test SMS notification sent to admin');
-    res.json({ success: true, message: 'Test SMS sent successfully' });
+    // Get admin phone from settings
+    const phoneResult = await pool.query('SELECT setting_value FROM admin_settings WHERE setting_key = $1', ['admin_phone']);
+    const adminPhone = phoneResult.rows.length > 0 ? phoneResult.rows[0].setting_value : null;
+    
+    const result = await notificationService.sendTestSMS(adminPhone);
+    console.log('✅ Test SMS sent successfully');
+    res.json({ 
+      success: true, 
+      message: 'Test SMS sent successfully',
+      messageId: result.sid,
+      recipient: adminPhone
+    });
   } catch (error) {
     console.error('Error sending test SMS:', error);
-    res.status(500).json({ error: 'Failed to send test SMS' });
+    res.status(500).json({ error: 'Failed to send test SMS', details: error.message });
   }
 });
 
