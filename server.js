@@ -69,6 +69,9 @@ app.use(limiter);
 
 // PostgreSQL connection  
 const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+console.log('🔍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_URL);
+console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('🔍 Connection string starts with:', connectionString ? connectionString.substring(0, 50) + '...' : 'NONE');
 
 const pool = new Pool({
   connectionString: connectionString,
