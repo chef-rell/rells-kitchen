@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const nodemailer = require('nodemailer');
 // const USPSIntegration = require('./usps-integration'); // Old Web Tools API - DEPRECATED
 const USPSOAuthIntegration = require('./usps-oauth-integration'); // New OAuth 2.0 API
 const TaxCalculator = require('./tax-calculator');
@@ -2080,7 +2081,6 @@ app.post('/admin/test-email', async (req, res) => {
     }
     
     console.log('📧 Creating direct Gmail transporter...');
-    const nodemailer = require('nodemailer');
     
     const transporter = nodemailer.createTransporter({
       service: 'gmail',
@@ -2410,7 +2410,6 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
     }
     
     console.log('📧 Creating direct Gmail transporter...');
-    const nodemailer = require('nodemailer');
     
     const transporter = nodemailer.createTransporter({
       service: 'gmail',
