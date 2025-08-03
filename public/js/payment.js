@@ -226,45 +226,50 @@ class PaymentHandler {
         const zipField = document.getElementById('shipping-zip');
         const shippingSelect = document.getElementById('shipping-method');
         
-        // Ensure all required elements and data are available
-        if (zipField && shippingSelect && this.currentUser && this.currentUser.address_zip && 
-            this.currentUser.role !== 'guest' && this.selectedSubProduct) {
+        // Only populate if the field is empty to avoid overwriting user input
+        if (zipField && shippingSelect && !zipField.value.trim() && this.selectedSubProduct) {
+            let zipToUse = '72120'; // Default ZIP code for guests
+            let source = 'default (guest)';
             
-            // Only populate if the field is empty to avoid overwriting user input
-            if (!zipField.value.trim()) {
-                console.log('Auto-populating ZIP and triggering shipping calculation...');
-                
-                // Set the ZIP field
-                zipField.value = this.currentUser.address_zip;
-                this.shippingZip = this.currentUser.address_zip;
-                
-                // Clear error styling if any
-                zipField.style.borderColor = '';
-                
-                // Show loading state
-                shippingSelect.innerHTML = '<option value="" disabled selected>🔄 Loading shipping options...</option>';
-                
-                // Auto-calculate shipping rates if valid ZIP
-                if (this.isValidZipCode(this.currentUser.address_zip)) {
-                    console.log('Calculating shipping for ZIP:', this.currentUser.address_zip);
-                    try {
-                        await this.calculateShippingRates();
-                        console.log('Shipping calculation completed successfully');
-                    } catch (error) {
-                        console.error('Shipping calculation failed:', error);
-                        shippingSelect.innerHTML = '<option value="" disabled selected>Enter ZIP code to see shipping options</option>';
-                    }
-                } else {
-                    console.log('Invalid ZIP code format:', this.currentUser.address_zip);
+            // Use user's ZIP if they're a logged-in member with a saved ZIP
+            if (this.currentUser && this.currentUser.address_zip && this.currentUser.role !== 'guest') {
+                zipToUse = this.currentUser.address_zip;
+                source = 'user profile';
+            }
+            
+            console.log(`Auto-populating ZIP from ${source}: ${zipToUse}`);
+            
+            // Set the ZIP field
+            zipField.value = zipToUse;
+            this.shippingZip = zipToUse;
+            
+            // Clear error styling if any
+            zipField.style.borderColor = '';
+            
+            // Show loading state
+            shippingSelect.innerHTML = '<option value="" disabled selected>🔄 Loading shipping options...</option>';
+            
+            // Auto-calculate shipping rates if valid ZIP
+            if (this.isValidZipCode(zipToUse)) {
+                console.log('Calculating shipping for ZIP:', zipToUse);
+                try {
+                    await this.calculateShippingRates();
+                    console.log('Shipping calculation completed successfully');
+                } catch (error) {
+                    console.error('Shipping calculation failed:', error);
+                    shippingSelect.innerHTML = '<option value="" disabled selected>Enter ZIP code to see shipping options</option>';
                 }
+            } else {
+                console.log('Invalid ZIP code format:', zipToUse);
             }
         } else {
-            console.log('ZIP auto-populate skipped - missing requirements:', {
+            console.log('ZIP auto-populate skipped:', {
                 zipField: !!zipField,
                 shippingSelect: !!shippingSelect,
+                zipFieldHasValue: zipField ? !!zipField.value.trim() : false,
+                selectedSubProduct: !!this.selectedSubProduct,
                 currentUser: !!this.currentUser,
-                userZip: !!this.currentUser?.address_zip,
-                selectedSubProduct: !!this.selectedSubProduct
+                userZip: this.currentUser?.address_zip || 'none'
             });
         }
     }
