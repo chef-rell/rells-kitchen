@@ -1432,7 +1432,7 @@ app.post('/api/create-paypal-order', optionalAuth, async (req, res) => {
       application_context: {
         brand_name: "Rell's Kitchen",
         locale: "en-US",
-        landing_page: "GUEST_CHECKOUT",
+        landing_page: "BILLING",
         shipping_preference: "GET_FROM_FILE",
         user_action: "PAY_NOW",
         return_url: `${req.protocol}://${req.get('host')}/payment-return`,
