@@ -307,7 +307,7 @@ class RellsKitchen {
                 <div class="product-header">
                     <h3 class="product-name">${product.name}</h3>
                     <p class="product-description">${product.description}</p>
-                    <div class="product-price">Priced from $${product.price}</div>
+                    <div class="product-price">Priced from $${product.name === 'Tamarind_Sweets' ? '13.98' : product.price}</div>
                 </div>
                 <div class="product-stats">
                     <div class="stat-item">
