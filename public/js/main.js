@@ -111,6 +111,7 @@ class RellsKitchen {
     updateAuthUI() {
         const authBtn = document.getElementById('auth-btn');
         const guestBtn = document.getElementById('guest-btn');
+        const adminLink = document.getElementById('admin-nav-link');
         // const cookbookLink = document.querySelector('.cookbook-link');
 
         if (this.currentUser) {
@@ -123,10 +124,25 @@ class RellsKitchen {
                 guestBtn.style.display = 'none';
             }
 
+            // Show admin link only for users with admin role
+            if (adminLink) {
+                if (this.currentUser.role === 'admin') {
+                    adminLink.style.display = 'inline-block';
+                    console.log('Admin link shown for user:', this.currentUser.username);
+                } else {
+                    adminLink.style.display = 'none';
+                }
+            }
+
             // if (cookbookLink && this.currentUser.role === 'guest') {
             //     cookbookLink.style.opacity = '0.6';
             //     cookbookLink.title = 'Member access required';
             // }
+        } else {
+            // Hide admin link if no user is logged in
+            if (adminLink) {
+                adminLink.style.display = 'none';
+            }
         }
     }
 

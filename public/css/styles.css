@@ -153,6 +153,28 @@ body {
   box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
 }
 
+/* Admin link styling */
+.admin-link {
+  background: linear-gradient(45deg, #bf0a30, #002868);
+  color: #ffffff !important;
+  border-color: #bf0a30 !important;
+  font-weight: 600;
+  position: relative;
+}
+
+.admin-link:hover {
+  background: linear-gradient(45deg, #ff1744, #1976d2);
+  box-shadow: 0 0 15px rgba(191, 10, 48, 0.5), 0 0 25px rgba(0, 40, 104, 0.3);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+.admin-link::before {
+  content: "⚡";
+  margin-right: 5px;
+  font-size: 0.9em;
+}
+
 .cookbook-link {
   background: linear-gradient(45deg, var(--caribbean-orange), var(--neon-pink));
   border: none;
