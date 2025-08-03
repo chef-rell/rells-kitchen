@@ -425,6 +425,19 @@ class PaymentHandler {
         if (shippingMethodSelect) {
             shippingMethodSelect.addEventListener('change', async () => {
                 this.shippingMethod = shippingMethodSelect.value;
+                
+                // Check if Local Pickup is selected with non-Arkansas ZIP
+                const zipField = document.getElementById('shipping-zip');
+                const currentZip = zipField ? zipField.value.trim() : '';
+                
+                if (this.shippingMethod === 'LOCAL_PICKUP' && currentZip && !this.isArkansasZipCode(currentZip)) {
+                    this.showNotification('⚠️ Local pickup is only available for Arkansas ZIP codes. Please update your ZIP code or choose a different shipping method.', 'warning');
+                    shippingMethodSelect.style.borderColor = 'var(--warning-orange)';
+                } else {
+                    // Clear any warning styling
+                    shippingMethodSelect.style.borderColor = '';
+                }
+                
                 await this.calculateShippingCost();
             });
         }
@@ -726,6 +739,17 @@ class PaymentHandler {
                 return;
             }
 
+            // Validate Local Pickup is only for Arkansas ZIP codes
+            if (this.shippingMethod === 'LOCAL_PICKUP' && !this.isArkansasZipCode(shippingZip)) {
+                this.showNotification('Local pickup is only available for Arkansas ZIP codes. Please choose a shipping method or update your ZIP code.', 'error');
+                const shippingSelect = document.getElementById('shipping-method');
+                if (shippingSelect) {
+                    shippingSelect.style.borderColor = 'var(--error-red)';
+                    shippingSelect.focus();
+                }
+                return;
+            }
+
             if (!this.shippingMethod || this.availableShippingRates.length === 0) {
                 this.showNotification('Please wait for shipping options to load or refresh the page.', 'error');
                 return;
@@ -800,6 +824,11 @@ class PaymentHandler {
         const zipField = document.getElementById('shipping-zip');
         const customerEmail = emailField.value.trim();
         const shippingZip = zipField.value.trim();
+
+        // Validate Local Pickup is only for Arkansas ZIP codes
+        if (this.shippingMethod === 'LOCAL_PICKUP' && !this.isArkansasZipCode(shippingZip)) {
+            throw new Error('Local pickup is only available for Arkansas ZIP codes. Please choose a shipping method or update your ZIP code.');
+        }
 
         // Calculate order totals
         const subtotal = parseFloat((this.selectedSubProduct.price * this.quantity).toFixed(2));
@@ -1268,6 +1297,18 @@ class PaymentHandler {
 
     isValidZipCode(zip) {
         return /^\d{5}(-\d{4})?$/.test(zip);
+    }
+
+    isArkansasZipCode(zip) {
+        if (!this.isValidZipCode(zip)) return false;
+        
+        // Extract the first 3 digits for ZIP code prefix checking
+        const zipPrefix = parseInt(zip.substring(0, 3));
+        
+        // Arkansas ZIP code ranges
+        // 716-729 are the primary Arkansas ranges
+        // 750-754 are some eastern Arkansas areas
+        return (zipPrefix >= 716 && zipPrefix <= 729) || (zipPrefix >= 750 && zipPrefix <= 754);
     }
     
     calculateFinalShippingCost(shippingAddress) {
