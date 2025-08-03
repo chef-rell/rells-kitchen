@@ -213,11 +213,15 @@ class PaymentHandler {
     populateUserEmail() {
         const emailField = document.getElementById('customer-email');
         
-        if (emailField && this.currentUser && this.currentUser.email && this.currentUser.role !== 'guest') {
-            // Only populate if the field is empty to avoid overwriting user input
-            if (!emailField.value.trim()) {
+        if (emailField && !emailField.value.trim()) {
+            // Use user's email if they're logged in and not a guest
+            if (this.currentUser && this.currentUser.email && this.currentUser.role !== 'guest') {
                 emailField.value = this.currentUser.email;
                 console.log('Auto-populated email for logged-in user:', this.currentUser.email);
+            } else {
+                // Default email for guests
+                emailField.value = 'guest@guestmail.com';
+                console.log('Auto-populated default guest email: guest@guestmail.com');
             }
         }
     }
@@ -1182,8 +1186,26 @@ class PaymentHandler {
             option.dataset.cost = rate.cost;
             option.dataset.deliveryTime = rate.deliveryTime;
             
-            // Select Ground Advantage by default, or first option if not available
-            if (rate.service === 'USPS_GROUND_ADVANTAGE' || (index === 0 && !rates.find(r => r.service === 'USPS_GROUND_ADVANTAGE'))) {
+            // Default selection logic based on user type
+            let shouldSelect = false;
+            
+            // For guests or non-logged in users, prefer Local Pickup
+            if (!this.currentUser || this.currentUser.role === 'guest') {
+                if (rate.service === 'LOCAL_PICKUP') {
+                    shouldSelect = true;
+                    console.log('Defaulting to Local Pickup for guest');
+                } else if (index === 0 && !rates.find(r => r.service === 'LOCAL_PICKUP')) {
+                    // Fallback to first option if Local Pickup not available
+                    shouldSelect = true;
+                }
+            } else {
+                // For logged-in members, prefer Ground Advantage
+                if (rate.service === 'USPS_GROUND_ADVANTAGE' || (index === 0 && !rates.find(r => r.service === 'USPS_GROUND_ADVANTAGE'))) {
+                    shouldSelect = true;
+                }
+            }
+            
+            if (shouldSelect) {
                 option.selected = true;
                 this.shippingMethod = rate.service;
                 this.shippingCost = rate.cost;
