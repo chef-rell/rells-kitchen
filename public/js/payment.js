@@ -302,9 +302,13 @@ class PaymentHandler {
         // Populate size dropdown
         this.renderSizeOptions();
         
-        // Select first available size by default
+        // Select first available non-4oz size by default
         if (this.subProducts.length > 0) {
-            this.selectedSubProduct = this.subProducts[0];
+            // Find first available product that's not 4oz and has inventory > 0
+            const availableProduct = this.subProducts.find(sp => 
+                sp.size !== '4oz' && sp.inventory_count > 0
+            );
+            this.selectedSubProduct = availableProduct || this.subProducts[0];
             // Set initial quantity to 1
             this.quantity = 1;
             document.getElementById('quantity').value = this.quantity;
@@ -321,7 +325,21 @@ class PaymentHandler {
         const sizeSelect = document.getElementById('size-select');
         sizeSelect.innerHTML = '';
         
-        this.subProducts.forEach(subProduct => {
+        // Filter out 4oz products and products with 0 inventory for display only
+        // Keep original subProducts array intact for PayPal compatibility
+        const displaySubProducts = this.subProducts.filter(subProduct => {
+            // Exclude 4oz products from frontend display
+            if (subProduct.size === '4oz') {
+                return false;
+            }
+            // Exclude products with 0 inventory from frontend display
+            if (!subProduct.inventory_count || subProduct.inventory_count === 0) {
+                return false;
+            }
+            return true;
+        });
+        
+        displaySubProducts.forEach(subProduct => {
             const option = document.createElement('option');
             option.value = subProduct.id;
             option.textContent = `${subProduct.size} - $${subProduct.price}`;

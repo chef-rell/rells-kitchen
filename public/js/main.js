@@ -277,6 +277,28 @@ class RellsKitchen {
             if (response.ok) {
                 const data = await response.json();
                 this.products = data.products;
+                
+                // Fetch sub-products for each product to get 8oz pricing
+                for (let product of this.products) {
+                    try {
+                        const subProductResponse = await fetch(`/api/sub-products/${product.id}`, {
+                            credentials: 'include'
+                        });
+                        if (subProductResponse.ok) {
+                            const subProductData = await subProductResponse.json();
+                            // Filter out 4oz products and find 8oz price
+                            const availableSubProducts = subProductData.subProducts.filter(sp => sp.size !== '4oz' && sp.inventory_count > 0);
+                            const eightOzProduct = subProductData.subProducts.find(sp => sp.size === '8oz');
+                            
+                            product.availableSubProducts = availableSubProducts;
+                            product.eightOzPrice = eightOzProduct ? eightOzProduct.price : product.price;
+                        }
+                    } catch (error) {
+                        console.error(`Failed to load sub-products for ${product.id}:`, error);
+                        product.eightOzPrice = product.price; // Fallback
+                    }
+                }
+                
                 this.renderProducts();
             }
         } catch (error) {
@@ -307,7 +329,7 @@ class RellsKitchen {
                 <div class="product-header">
                     <h3 class="product-name">${product.name}</h3>
                     <p class="product-description">${product.description}</p>
-                    <div class="product-price">Priced from $${product.name === 'Tamarind_Sweets' ? '13.98' : product.price}</div>
+                    <div class="product-price">Priced from $${product.eightOzPrice || product.price}</div>
                 </div>
                 <div class="product-stats">
                     <div class="stat-item">
