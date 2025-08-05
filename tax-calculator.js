@@ -3,7 +3,7 @@ class TaxCalculator {
         // Tax rates by state for food/jam products
         this.taxRates = {
             // Arkansas has reduced rate for food products
-            'AR': 0.03125, // 3.125% reduced rate for jams/food
+            'AR': 0.045, // 4.5% reduced rate for jams/food
             'AL': 0.04,    // 4% state sales tax on food
             'AZ': 0.056,   // 5.6% state rate (food not exempt)
             'CA': 0.075,   // 7.5% base rate (food taxable)

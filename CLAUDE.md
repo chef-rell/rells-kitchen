@@ -75,7 +75,7 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 
 ### Tax Calculation System (2025-08-02) - FULLY OPERATIONAL ✅
 **STATUS**: Complete tax system with Arkansas nexus compliance
-- **Arkansas Rate**: 3.125% for food items (reduced rate)
+- **Arkansas Rate**: 4.5% for food items (reduced rate)
 - **Integration**: Full PayPal breakdown with itemized tax
 - **API Endpoints**:
   - `/api/calculate-order-total` - Combined shipping/tax/discount calculation
