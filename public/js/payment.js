@@ -1225,8 +1225,11 @@ class PaymentHandler {
         // Clear existing options
         shippingSelect.innerHTML = '';
 
+        // Filter out LOCAL_PICKUP from available options - HIDDEN FOR NOW
+        const availableRates = rates.filter(rate => rate.service !== 'LOCAL_PICKUP');
+
         // Add shipping options
-        rates.forEach((rate, index) => {
+        availableRates.forEach((rate, index) => {
             const option = document.createElement('option');
             option.value = rate.service;
             option.textContent = `${rate.description} - ${rate.cost > 0 ? '$' + rate.cost.toFixed(2) : 'FREE'}`;
@@ -1236,18 +1239,16 @@ class PaymentHandler {
             // Default selection logic based on user type
             let shouldSelect = false;
             
-            // For guests or non-logged in users, prefer Local Pickup
+            // For guests or non-logged in users, prefer first available option (LOCAL_PICKUP is hidden)
             if (!this.currentUser || this.currentUser.role === 'guest') {
-                if (rate.service === 'LOCAL_PICKUP') {
+                if (index === 0) {
+                    // Default to first available option since LOCAL_PICKUP is hidden
                     shouldSelect = true;
-                    console.log('Defaulting to Local Pickup for guest');
-                } else if (index === 0 && !rates.find(r => r.service === 'LOCAL_PICKUP')) {
-                    // Fallback to first option if Local Pickup not available
-                    shouldSelect = true;
+                    console.log('Defaulting to first available shipping option for guest');
                 }
             } else {
                 // For logged-in members, prefer Ground Advantage
-                if (rate.service === 'USPS_GROUND_ADVANTAGE' || (index === 0 && !rates.find(r => r.service === 'USPS_GROUND_ADVANTAGE'))) {
+                if (rate.service === 'USPS_GROUND_ADVANTAGE' || (index === 0 && !availableRates.find(r => r.service === 'USPS_GROUND_ADVANTAGE'))) {
                     shouldSelect = true;
                 }
             }
