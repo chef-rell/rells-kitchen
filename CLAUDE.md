@@ -156,3 +156,4 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - Added memory
 - Memory added
 - memorize
+- website current updates
