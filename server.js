@@ -2358,17 +2358,20 @@ app.get('/api/admin/test-orders', async (req, res) => {
     const testQuery = await pool.query('SELECT 1 as test');
     console.log('Database connection test:', testQuery.rows);
     
-    // Check what orders exist
+    // Get the actual column names from the orders table
+    const columnsQuery = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'orders' 
+      ORDER BY ordinal_position
+    `);
+    console.log('Orders table columns:', columnsQuery.rows);
+    
+    // Check what orders exist with only basic columns we know exist
     const ordersQuery = await pool.query(`
-      SELECT 
-        id, 
-        status, 
-        shipping_zip, 
-        created_at,
-        customer_email,
-        total_amount
+      SELECT *
       FROM orders 
-      LIMIT 10
+      LIMIT 5
     `);
     console.log('Sample orders:', ordersQuery.rows);
     
@@ -2384,10 +2387,11 @@ app.get('/api/admin/test-orders', async (req, res) => {
     res.json({
       success: true,
       databaseConnection: 'OK',
+      tableColumns: columnsQuery.rows,
       totalOrders: ordersQuery.rows.length,
       arkansasOrdersCount: arkansasQuery.rows[0]?.count || 0,
       sampleOrders: ordersQuery.rows,
-      message: 'Database test completed - check server logs for details'
+      message: 'Database test completed - check server logs and response for column names'
     });
   } catch (error) {
     console.error('Database test error:', error);
