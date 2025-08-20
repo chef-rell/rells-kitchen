@@ -232,9 +232,9 @@
                     <label>To:</label>
                     <input type="date" id="endDate" class="size-dropdown">
                 </div>
-                <button class="sync-btn" onclick="syncOrders()">🔄 Sync Orders</button>
-                <button class="sync-btn" onclick="syncCurrentMonth()">📅 Current Month</button>
-                <button class="sync-btn" onclick="syncLastMonth()">📅 Last Month</button>
+                <button class="sync-btn" id="sync-orders-btn">🔄 Sync Orders</button>
+                <button class="sync-btn" id="sync-current-month-btn">📅 Current Month</button>
+                <button class="sync-btn" id="sync-last-month-btn">📅 Last Month</button>
             </div>
             <div class="loading-indicator" id="loadingIndicator">
                 <p>⏳ Loading orders from database...</p>
@@ -267,9 +267,9 @@
         <div class="export-section">
             <h2>📤 Export Options</h2>
             <div class="export-buttons">
-                <button class="export-btn" onclick="exportCSV()">📊 Export to CSV</button>
-                <button class="export-btn" onclick="exportADAP()">📋 Export ADAP XML</button>
-                <button class="export-btn" onclick="exportMonthlyReport()">📈 Monthly Report</button>
+                <button class="export-btn" id="export-csv-btn">📊 Export to CSV</button>
+                <button class="export-btn" id="export-adap-btn">📋 Export ADAP XML</button>
+                <button class="export-btn" id="export-monthly-btn">📈 Monthly Report</button>
             </div>
         </div>
 
@@ -313,13 +313,21 @@
             }
         }
 
-        // Set default dates
+        // Set default dates and attach event listeners
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
             
             document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
             document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            
+            // Attach event listeners to buttons
+            document.getElementById('sync-orders-btn').addEventListener('click', syncOrders);
+            document.getElementById('sync-current-month-btn').addEventListener('click', syncCurrentMonth);
+            document.getElementById('sync-last-month-btn').addEventListener('click', syncLastMonth);
+            document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+            document.getElementById('export-adap-btn').addEventListener('click', exportADAP);
+            document.getElementById('export-monthly-btn').addEventListener('click', exportMonthlyReport);
             
             // Auto-sync current month on load
             syncCurrentMonth();
