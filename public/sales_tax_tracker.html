@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rell's Kitchen - Sales Tax Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .card .amount {
+            font-size: 2em;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        input, select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-export {
+            background: linear-gradient(45deg, #2ed573, #7bed9f);
+            margin-left: 10px;
+        }
+        
+        .sales-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .delete-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .delete-btn:hover {
+            background: #ff5252;
+        }
+        
+        .tax-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .tax-info h3 {
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cards {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍯 Rell's Kitchen</h1>
+            <p>Sales Tax Tracker - Sherwood, Arkansas</p>
+        </div>
+        
+        <div class="content">
+            <div class="tax-info">
+                <h3>📋 Tax Information</h3>
+                <p><strong>Business:</strong> Rell's Kitchen (Arkansas LLC) | <strong>EIN:</strong> 39-3367884</p>
+                <p><strong>Location:</strong> Sherwood, AR | <strong>Tax Rate:</strong> 4.5% (1.5% state food + 1% county + 2% city)</p>
+            </div>
+            
+            <div class="cards">
+                <div class="card">
+                    <h3>Total Sales</h3>
+                    <div class="amount" id="totalSales">$0.00</div>
+                </div>
+                <div class="card">
+                    <h3>Tax Collected</h3>
+                    <div class="amount" id="totalTax">$0.00</div>
+                </div>
+                <div class="card">
+                    <h3>This Month</h3>
+                    <div class="amount" id="monthlyTax">$0.00</div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h2>📝 Record New Sale</h2>
+                <form id="saleForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="date">Date</label>
+                            <input type="date" id="date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="customer">Customer (Optional)</label>
+                            <input type="text" id="customer" placeholder="Customer name">
+                        </div>
+                        <div class="form-group">
+                            <label for="product">Product</label>
+                            <select id="product" required>
+                                <option value="">Select Product</option>
+                                <option value="Tamarind Jam">Tamarind Jam</option>
+                                <option value="Mango Jam">Mango Jam</option>
+                                <option value="Strawberry Jam">Strawberry Jam</option>
+                                <option value="Grape Jelly">Grape Jelly</option>
+                                <option value="Peach Preserves">Peach Preserves</option>
+                                <option value="Mixed Berry Jam">Mixed Berry Jam</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="quantity">Quantity</label>
+                            <input type="number" id="quantity" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="unitPrice">Unit Price ($)</label>
+                            <input type="number" id="unitPrice" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="location">Sale Location</label>
+                            <select id="location" required>
+                                <option value="Sherwood">Sherwood, AR (4.5%)</option>
+                                <option value="Other">Other Location</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Add Sale</button>
+                    <button type="button" class="btn btn-export" onclick="exportData()">📊 Export to CSV</button>
+                </form>
+            </div>
+            
+            <div class="sales-table">
+                <table id="salesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Subtotal</th>
+                            <th>Tax</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sales = JSON.parse(localStorage.getItem('rellsKitchenSales')) || [];
+        
+        // Set today's date as default
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        
+        // Load existing sales
+        displaySales();
+        updateTotals();
+        
+        document.getElementById('saleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const date = document.getElementById('date').value;
+            const customer = document.getElementById('customer').value || 'N/A';
+            const product = document.getElementById('product').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const unitPrice = parseFloat(document.getElementById('unitPrice').value);
+            const location = document.getElementById('location').value;
+            
+            const subtotal = quantity * unitPrice;
+            const taxRate = location === 'Sherwood' ? 0.045 : 0; // 4.5% for Sherwood
+            const tax = subtotal * taxRate;
+            const total = subtotal + tax;
+            
+            const sale = {
+                id: Date.now(),
+                date,
+                customer,
+                product,
+                quantity,
+                unitPrice,
+                subtotal,
+                tax,
+                total,
+                location,
+                taxRate: taxRate * 100
+            };
+            
+            sales.unshift(sale); // Add to beginning
+            localStorage.setItem('rellsKitchenSales', JSON.stringify(sales));
+            
+            displaySales();
+            updateTotals();
+            
+            // Reset form
+            document.getElementById('saleForm').reset();
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            // Show success message
+            showMessage('Sale recorded successfully!', 'success');
+        });
+        
+        function displaySales() {
+            const tbody = document.getElementById('salesBody');
+            tbody.innerHTML = '';
+            
+            sales.forEach(sale => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(sale.date).toLocaleDateString()}</td>
+                    <td>${sale.customer}</td>
+                    <td>${sale.product}</td>
+                    <td>${sale.quantity}</td>
+                    <td>$${sale.unitPrice.toFixed(2)}</td>
+                    <td>$${sale.subtotal.toFixed(2)}</td>
+                    <td>$${sale.tax.toFixed(2)}</td>
+                    <td>$${sale.total.toFixed(2)}</td>
+                    <td><button class="delete-btn" onclick="deleteSale(${sale.id})">Delete</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function updateTotals() {
+            const totalSales = sales.reduce((sum, sale) => sum + sale.subtotal, 0);
+            const totalTax = sales.reduce((sum, sale) => sum + sale.tax, 0);
+            
+            // Calculate this month's tax
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthlyTax = sales
+                .filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+                })
+                .reduce((sum, sale) => sum + sale.tax, 0);
+            
+            document.getElementById('totalSales').textContent = `$${totalSales.toFixed(2)}`;
+            document.getElementById('totalTax').textContent = `$${totalTax.toFixed(2)}`;
+            document.getElementById('monthlyTax').textContent = `$${monthlyTax.toFixed(2)}`;
+        }
+        
+        function deleteSale(id) {
+            if (confirm('Are you sure you want to delete this sale?')) {
+                sales = sales.filter(sale => sale.id !== id);
+                localStorage.setItem('rellsKitchenSales', JSON.stringify(sales));
+                displaySales();
+                updateTotals();
+                showMessage('Sale deleted successfully!', 'success');
+            }
+        }
+        
+        function exportData() {
+            if (sales.length === 0) {
+                showMessage('No sales data to export!', 'error');
+                return;
+            }
+            
+            // Show export options
+            const exportType = prompt('Choose export format:\n1. CSV (for Excel/records)\n2. XML (for ATAP import)\n\nEnter 1 or 2:');
+            
+            if (exportType === '1') {
+                exportCSV();
+            } else if (exportType === '2') {
+                exportXML();
+            } else {
+                showMessage('Invalid selection. Export cancelled.', 'error');
+            }
+        }
+        
+        function exportCSV() {
+            const headers = ['Date', 'Customer', 'Product', 'Quantity', 'Unit Price', 'Subtotal', 'Tax Rate', 'Tax Collected', 'Total', 'Location'];
+            const csvContent = [
+                headers.join(','),
+                ...sales.map(sale => [
+                    sale.date,
+                    `"${sale.customer}"`,
+                    `"${sale.product}"`,
+                    sale.quantity,
+                    sale.unitPrice.toFixed(2),
+                    sale.subtotal.toFixed(2),
+                    `${sale.taxRate}%`,
+                    sale.tax.toFixed(2),
+                    sale.total.toFixed(2),
+                    sale.location
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rells-kitchen-sales-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showMessage('CSV exported successfully!', 'success');
+        }
+        
+        function exportXML() {
+            // Calculate totals for the current month/period
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            
+            // Filter sales for current reporting period
+            const periodSales = sales.filter(sale => {
+                const saleDate = new Date(sale.date);
+                return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
+            });
+            
+            const totalTaxableFood = periodSales.reduce((sum, sale) => sum + sale.subtotal, 0);
+            const totalFoodTax = periodSales.reduce((sum, sale) => sum + sale.tax, 0);
+            
+            // Create XML structure matching Arkansas ATAP format
+            const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<ExciseTaxReturn>
+    <Header>
+        <TaxYear>${currentYear}</TaxYear>
+        <Period>${String(currentMonth + 1).padStart(2, '0')}</Period>
+        <BusinessName>Rell's Kitchen</BusinessName>
+        <EIN>39-3367884</EIN>
+        <FilingDate>${currentDate.toISOString().split('T')[0]}</FilingDate>
+    </Header>
+    
+    <GrossReceiptsTax>
+        <StateTax>
+            <TaxableSales>0.00</TaxableSales>
+            <Rate>0.065000</Rate>
+            <GrossTaxDue>0.00</GrossTaxDue>
+            <NetTaxDue>0.00</NetTaxDue>
+        </StateTax>
+        
+        <FoodTax>
+            <TaxableSales>${totalTaxableFood.toFixed(2)}</TaxableSales>
+            <Rate>0.015000</Rate>
+            <GrossTaxDue>${(totalTaxableFood * 0.015).toFixed(2)}</GrossTaxDue>
+            <NetTaxDue>${(totalTaxableFood * 0.015).toFixed(2)}</NetTaxDue>
+        </FoodTax>
+        
+        <ManufacturingUtilityTax>
+            <TaxableSales>0.00</TaxableSales>
+            <Rate>0.006250</Rate>
+            <GrossTaxDue>0.00</GrossTaxDue>
+            <NetTaxDue>0.00</NetTaxDue>
+        </ManufacturingUtilityTax>
+        
+        <AviationTax>
+            <TaxableSales>0.00</TaxableSales>
+            <Rate>0.065000</Rate>
+            <GrossTaxDue>0.00</GrossTaxDue>
+            <NetTaxDue>0.00</NetTaxDue>
+        </AviationTax>
+        
+        <ElectricManufacturingTax>
+            <TaxableSales>0.00</TaxableSales>
+            <Rate>0.016250</Rate>
+            <GrossTaxDue>0.00</GrossTaxDue>
+            <NetTaxDue>0.00</NetTaxDue>
+        </ElectricManufacturingTax>
+    </GrossReceiptsTax>
+    
+    <VendorUseTax>
+        <StateTax>
+            <TaxableSalesUse>0.00</TaxableSalesUse>
+            <Rate>0.065000</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </StateTax>
+        
+        <FoodTax>
+            <TaxableSalesUse>0.00</TaxableSalesUse>
+            <Rate>0.001250</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </FoodTax>
+        
+        <ManufacturingUtilityTax>
+            <TaxableSalesUse>0.00</TaxableSalesUse>
+            <Rate>0.006250</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </ManufacturingUtilityTax>
+        
+        <AviationTax>
+            <TaxableSalesUse>0.00</TaxableSalesUse>
+            <Rate>0.065000</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </AviationTax>
+        
+        <ElectricManufacturingTax>
+            <TaxableSalesUse>0.00</TaxableSalesUse>
+            <Rate>0.016250</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </ElectricManufacturingTax>
+    </VendorUseTax>
+    
+    <ConsumerUseTax>
+        <StateTax>
+            <TaxablePurchases>0.00</TaxablePurchases>
+            <Rate>0.065000</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </StateTax>
+        
+        <FoodTax>
+            <TaxablePurchases>0.00</TaxablePurchases>
+            <Rate>0.001250</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </FoodTax>
+        
+        <ManufacturingUtilityTax>
+            <TaxablePurchases>0.00</TaxablePurchases>
+            <Rate>0.006250</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </ManufacturingUtilityTax>
+        
+        <AviationTax>
+            <TaxablePurchases>0.00</TaxablePurchases>
+            <Rate>0.065000</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </AviationTax>
+        
+        <ElectricManufacturingTax>
+            <TaxablePurchases>0.00</TaxablePurchases>
+            <Rate>0.016250</Rate>
+            <NetTaxDue>0.00</NetTaxDue>
+        </ElectricManufacturingTax>
+    </ConsumerUseTax>
+    
+    <LocalTax>
+        <TaxableSales>${totalTaxableFood.toFixed(2)}</TaxableSales>
+        <LocalRate>0.030000</LocalRate>
+        <LocalTaxDue>${(totalTaxableFood * 0.03).toFixed(2)}</LocalTaxDue>
+    </LocalTax>
+    
+    <Summary>
+        <TotalStateTaxDue>${(totalTaxableFood * 0.015).toFixed(2)}</TotalStateTaxDue>
+        <TotalLocalTaxDue>${(totalTaxableFood * 0.03).toFixed(2)}</TotalLocalTaxDue>
+        <TotalTaxDue>${totalFoodTax.toFixed(2)}</TotalTaxDue>
+    </Summary>
+    
+    <SalesDetail>
+        ${periodSales.map(sale => `
+        <Sale>
+            <Date>${sale.date}</Date>
+            <Customer>${sale.customer}</Customer>
+            <Product>${sale.product}</Product>
+            <Quantity>${sale.quantity}</Quantity>
+            <UnitPrice>${sale.unitPrice.toFixed(2)}</UnitPrice>
+            <Subtotal>${sale.subtotal.toFixed(2)}</Subtotal>
+            <TaxRate>${sale.taxRate.toFixed(3)}</TaxRate>
+            <TaxAmount>${sale.tax.toFixed(2)}</TaxAmount>
+            <Total>${sale.total.toFixed(2)}</Total>
+        </Sale>`).join('')}
+    </SalesDetail>
+</ExciseTaxReturn>`;
+            
+            const blob = new Blob([xmlContent], { type: 'application/xml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rells-kitchen-atap-${currentYear}-${String(currentMonth + 1).padStart(2, '0')}.xml`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showMessage('ATAP XML file exported successfully!', 'success');
+        }
+        
+        function showMessage(message, type) {
+            // Create and show a temporary message
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = message;
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                background: ${type === 'success' ? '#2ed573' : '#ff6b6b'};
+            `;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+        
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

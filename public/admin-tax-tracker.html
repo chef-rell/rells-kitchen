@@ -525,40 +525,64 @@
             const startDate = document.getElementById('startDate').value;
             const reportDate = new Date(startDate);
             
-            // Create simplified XML for ADAP (no custom namespaces)
+            // Create Arkansas ADAP-compliant XML based on ET-1 Excise Tax Return form structure
             const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<TaxReturn>
-    <Header>
-        <BusinessName>Rell's Kitchen</BusinessName>
-        <EIN>39-3367884</EIN>
-        <TaxPeriod>${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}</TaxPeriod>
+<ET1ExciseTaxReturn xmlns="http://www.dfa.arkansas.gov/excise" version="2024">
+    <ReturnHeader>
+        <TaxYear>${reportDate.getFullYear()}</TaxYear>
+        <TaxPeriod>${String(reportDate.getMonth() + 1).padStart(2, '0')}</TaxPeriod>
         <FilingDate>${currentDate.toISOString().split('T')[0]}</FilingDate>
-        <Location>Sherwood, AR 72120</Location>
-    </Header>
+        <TaxpayerInfo>
+            <BusinessName>Rell's Kitchen</BusinessName>
+            <FederalEIN>39-3367884</FederalEIN>
+            <ARTaxpayerID>100-832-951</ARTaxpayerID>
+            <BusinessAddress>
+                <Street>5900 John F Kennedy Blvd</Street>
+                <City>North Little Rock</City>
+                <State>AR</State>
+                <ZipCode>72116</ZipCode>
+                <County>Pulaski</County>
+            </BusinessAddress>
+            <ContactInfo>
+                <Phone>501-760-9490</Phone>
+                <Email>sales@rellskitchen.com</Email>
+            </ContactInfo>
+        </TaxpayerInfo>
+    </ReturnHeader>
     
-    <Summary>
-        <TotalTaxableSales>${totalTaxable.toFixed(2)}</TotalTaxableSales>
-        <StateTax>${(totalTaxable * 0.015).toFixed(2)}</StateTax>
-        <LocalTax>${(totalTaxable * 0.03).toFixed(2)}</LocalTax>
-        <TotalTaxCollected>${totalTax.toFixed(2)}</TotalTaxCollected>
+    <SalesTaxSummary>
+        <GrossSales>${totalSales.toFixed(2)}</GrossSales>
+        <ShippingCharges>${totalShipping.toFixed(2)}</ShippingCharges>
+        <TotalTaxableAmount>${totalTaxable.toFixed(2)}</TotalTaxableAmount>
+        <StateSalesTax rate="1.5%">${(totalTaxable * 0.015).toFixed(2)}</StateSalesTax>
+        <CountySalesTax rate="1.0%">${(totalTaxable * 0.01).toFixed(2)}</CountySalesTax>
+        <CitySalesTax rate="2.0%">${(totalTaxable * 0.02).toFixed(2)}</CitySalesTax>
+        <TotalSalesTaxDue>${totalTax.toFixed(2)}</TotalSalesTaxDue>
         <TransactionCount>${currentOrders.length}</TransactionCount>
-    </Summary>
+    </SalesTaxSummary>
     
-    <Transactions>
+    <TransactionDetails>
         ${currentOrders.map(order => `
-        <Transaction>
-            <Date>${new Date(order.date).toISOString().split('T')[0]}</Date>
-            <ID>${order.id}</ID>
-            <Description>${order.product_name} ${order.size || ''}</Description>
-            <Qty>${order.quantity}</Qty>
-            <Amount>${parseFloat(order.subtotal).toFixed(2)}</Amount>
-            <Shipping>${parseFloat(order.shipping_cost || 0).toFixed(2)}</Shipping>
-            <Taxable>${(parseFloat(order.subtotal) + parseFloat(order.shipping_cost || 0)).toFixed(2)}</Taxable>
-            <Tax>${parseFloat(order.tax_amount || 0).toFixed(2)}</Tax>
-            <Total>${parseFloat(order.total_amount).toFixed(2)}</Total>
-        </Transaction>`).join('')}
-    </Transactions>
-</TaxReturn>`;
+        <SaleTransaction>
+            <TransactionDate>${new Date(order.date).toISOString().split('T')[0]}</TransactionDate>
+            <TransactionID>${order.id}</TransactionID>
+            <ItemDescription>${order.product_name} ${order.size || ''}</ItemDescription>
+            <Quantity>${order.quantity}</Quantity>
+            <UnitPrice>${(parseFloat(order.subtotal) / order.quantity).toFixed(2)}</UnitPrice>
+            <SaleAmount>${parseFloat(order.subtotal).toFixed(2)}</SaleAmount>
+            <ShippingAmount>${parseFloat(order.shipping_cost || 0).toFixed(2)}</ShippingAmount>
+            <TaxableAmount>${(parseFloat(order.subtotal) + parseFloat(order.shipping_cost || 0)).toFixed(2)}</TaxableAmount>
+            <SalesTaxCollected>${parseFloat(order.tax_amount || 0).toFixed(2)}</SalesTaxCollected>
+            <GrossTotal>${parseFloat(order.total_amount).toFixed(2)}</GrossTotal>
+        </SaleTransaction>`).join('')}
+    </TransactionDetails>
+    
+    <Certification>
+        <PreparedBy>Automated Tax System</PreparedBy>
+        <PreparedDate>${currentDate.toISOString().split('T')[0]}</PreparedDate>
+        <Declaration>I certify that the information contained in this return is true, correct, and complete to the best of my knowledge and belief.</Declaration>
+    </Certification>
+</ET1ExciseTaxReturn>`;
             
             downloadFile(xmlContent, `rells-kitchen-adap-${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}.xml`, 'application/xml');
             showMessage('ADAP XML exported successfully!', 'success');
