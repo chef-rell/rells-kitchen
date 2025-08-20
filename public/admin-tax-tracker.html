@@ -375,7 +375,9 @@
                 const response = await fetch(`/api/admin/tax-report?startDate=${startDate}&endDate=${endDate}&key=${adminKey}`);
                 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch orders');
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.details || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+                    throw new Error(`Server error: ${errorMessage}`);
                 }
                 
                 const data = await response.json();
@@ -394,7 +396,7 @@
                 showMessage(`Successfully synced ${data.summary.totalOrders} orders`, 'success');
             } catch (error) {
                 console.error('Error fetching orders:', error);
-                showMessage('Failed to fetch orders from database', 'error');
+                showMessage(`Failed to fetch orders: ${error.message}`, 'error');
             } finally {
                 loadingIndicator.classList.remove('active');
             }

@@ -2345,6 +2345,59 @@ app.get('/api/admin/tax-report', async (req, res) => {
   }
 });
 
+// Test endpoint to debug database connectivity and order data
+app.get('/api/admin/test-orders', async (req, res) => {
+  const adminKey = req.query.key || req.headers['x-admin-key'];
+  
+  if (adminKey !== 'rells-kitchen-admin-2025') {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  try {
+    // Test basic database connection
+    const testQuery = await pool.query('SELECT 1 as test');
+    console.log('Database connection test:', testQuery.rows);
+    
+    // Check what orders exist
+    const ordersQuery = await pool.query(`
+      SELECT 
+        id, 
+        status, 
+        shipping_zip, 
+        created_at,
+        customer_email,
+        total_amount
+      FROM orders 
+      LIMIT 10
+    `);
+    console.log('Sample orders:', ordersQuery.rows);
+    
+    // Check Arkansas orders specifically
+    const arkansasQuery = await pool.query(`
+      SELECT 
+        COUNT(*) as count
+      FROM orders 
+      WHERE shipping_zip LIKE '71%' OR shipping_zip LIKE '72%'
+    `);
+    console.log('Arkansas orders count:', arkansasQuery.rows);
+    
+    res.json({
+      success: true,
+      databaseConnection: 'OK',
+      totalOrders: ordersQuery.rows.length,
+      arkansasOrdersCount: arkansasQuery.rows[0]?.count || 0,
+      sampleOrders: ordersQuery.rows,
+      message: 'Database test completed - check server logs for details'
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({ 
+      error: 'Database test failed',
+      details: error.message 
+    });
+  }
+});
+
 app.get('/api/admin/notification-settings', requireAdmin, async (req, res) => {
   try {
     // Load settings from database
