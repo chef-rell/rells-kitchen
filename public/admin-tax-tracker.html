@@ -268,7 +268,8 @@
             <h2>📤 Export Options</h2>
             <div class="export-buttons">
                 <button class="export-btn" id="export-csv-btn">📊 Export to CSV</button>
-                <button class="export-btn" id="export-adap-btn">📋 Export ADAP XML</button>
+                <button class="export-btn" id="export-adap-csv-btn">📋 ADAP Tax Report (CSV)</button>
+                <button class="export-btn" id="export-adap-btn">📄 ADAP XML (Backup)</button>
                 <button class="export-btn" id="export-monthly-btn">📈 Monthly Report</button>
             </div>
         </div>
@@ -326,6 +327,7 @@
             document.getElementById('sync-current-month-btn').addEventListener('click', syncCurrentMonth);
             document.getElementById('sync-last-month-btn').addEventListener('click', syncLastMonth);
             document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+            document.getElementById('export-adap-csv-btn').addEventListener('click', exportADAPCSV);
             document.getElementById('export-adap-btn').addEventListener('click', exportADAP);
             document.getElementById('export-monthly-btn').addEventListener('click', exportMonthlyReport);
             
@@ -454,6 +456,60 @@
             showMessage('CSV exported successfully!', 'success');
         }
 
+        function exportADAPCSV() {
+            if (currentOrders.length === 0) {
+                showMessage('No orders to export. Please sync orders first.', 'error');
+                return;
+            }
+            
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const reportDate = new Date(startDate);
+            
+            // Calculate totals
+            const totalSales = currentOrders.reduce((sum, order) => sum + parseFloat(order.subtotal || 0), 0);
+            const totalShipping = currentOrders.reduce((sum, order) => sum + parseFloat(order.shipping_cost || 0), 0);
+            const totalTaxable = totalSales + totalShipping;
+            const totalTax = currentOrders.reduce((sum, order) => sum + parseFloat(order.tax_amount || 0), 0);
+            
+            // Create ADAP-specific CSV with summary and detail sections
+            const csvContent = [
+                '# Arkansas Department of Finance - Excise Tax Report',
+                '# Business: Rell\'s Kitchen',
+                '# EIN: 39-3367884',
+                '# Location: Sherwood, AR 72120',
+                `# Tax Period: ${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}`,
+                `# Report Date: ${new Date().toISOString().split('T')[0]}`,
+                '',
+                '# TAX SUMMARY',
+                'Tax Type,Taxable Amount,Rate %,Tax Due',
+                `State Food Tax,${totalTaxable.toFixed(2)},1.500,${(totalTaxable * 0.015).toFixed(2)}`,
+                `County Tax,${totalTaxable.toFixed(2)},1.000,${(totalTaxable * 0.01).toFixed(2)}`,
+                `City Tax,${totalTaxable.toFixed(2)},2.000,${(totalTaxable * 0.02).toFixed(2)}`,
+                `TOTAL TAX,${totalTaxable.toFixed(2)},4.500,${totalTax.toFixed(2)}`,
+                '',
+                '# TRANSACTION DETAILS',
+                'Transaction Date,Transaction ID,Description,Quantity,Unit Price,Subtotal,Shipping,Taxable Amount,Tax Collected,Total Amount,Customer,Payment Reference',
+                ...currentOrders.map(order => [
+                    new Date(order.date).toISOString().split('T')[0],
+                    order.id,
+                    `"${order.product_name} ${order.size || ''}"`,
+                    order.quantity,
+                    parseFloat(order.unit_price).toFixed(2),
+                    parseFloat(order.subtotal).toFixed(2),
+                    parseFloat(order.shipping_cost || 0).toFixed(2),
+                    (parseFloat(order.subtotal) + parseFloat(order.shipping_cost || 0)).toFixed(2),
+                    parseFloat(order.tax_amount || 0).toFixed(2),
+                    parseFloat(order.total_amount).toFixed(2),
+                    `"${order.customer_email || 'Cash Sale'}"`,
+                    order.paypal_order_id || 'N/A'
+                ].join(','))
+            ].join('\n');
+            
+            downloadFile(csvContent, `rells-kitchen-adap-report-${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}.csv`, 'text/csv');
+            showMessage('ADAP CSV report exported successfully!', 'success');
+        }
+
         function exportADAP() {
             if (currentOrders.length === 0) {
                 showMessage('No orders to export. Please sync orders first.', 'error');
@@ -469,75 +525,40 @@
             const startDate = document.getElementById('startDate').value;
             const reportDate = new Date(startDate);
             
-            // Create Arkansas ADAP-compatible XML format
+            // Create simplified XML for ADAP (no custom namespaces)
             const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<ArkansasTaxReturn xmlns="http://www.arkansas.gov/dfa/excise" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <ReturnHeader>
-        <TaxPeriod>
-            <Year>${reportDate.getFullYear()}</Year>
-            <Month>${String(reportDate.getMonth() + 1).padStart(2, '0')}</Month>
-        </TaxPeriod>
-        <Taxpayer>
-            <BusinessName>Rell's Kitchen</BusinessName>
-            <FederalEIN>39-3367884</FederalEIN>
-            <BusinessAddress>
-                <City>Sherwood</City>
-                <State>AR</State>
-                <ZipCode>72120</ZipCode>
-            </BusinessAddress>
-        </Taxpayer>
-        <PreparationDate>${currentDate.toISOString().split('T')[0]}</PreparationDate>
-    </ReturnHeader>
+<TaxReturn>
+    <Header>
+        <BusinessName>Rell's Kitchen</BusinessName>
+        <EIN>39-3367884</EIN>
+        <TaxPeriod>${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}</TaxPeriod>
+        <FilingDate>${currentDate.toISOString().split('T')[0]}</FilingDate>
+        <Location>Sherwood, AR 72120</Location>
+    </Header>
     
-    <GrossReceiptsSchedule>
-        <StateGrossReceiptsTax>
-            <RetailFoodSales>
-                <TaxableAmount>${totalTaxable.toFixed(2)}</TaxableAmount>
-                <TaxRate>1.500</TaxRate>
-                <TaxDue>${(totalTaxable * 0.015).toFixed(2)}</TaxDue>
-            </RetailFoodSales>
-        </StateGrossReceiptsTax>
-        
-        <LocalTaxes>
-            <CountyTax>
-                <TaxableAmount>${totalTaxable.toFixed(2)}</TaxableAmount>
-                <TaxRate>1.000</TaxRate>
-                <TaxDue>${(totalTaxable * 0.01).toFixed(2)}</TaxDue>
-            </CountyTax>
-            <CityTax>
-                <TaxableAmount>${totalTaxable.toFixed(2)}</TaxableAmount>
-                <TaxRate>2.000</TaxRate>
-                <TaxDue>${(totalTaxable * 0.02).toFixed(2)}</TaxDue>
-            </CityTax>
-        </LocalTaxes>
-    </GrossReceiptsSchedule>
+    <Summary>
+        <TotalTaxableSales>${totalTaxable.toFixed(2)}</TotalTaxableSales>
+        <StateTax>${(totalTaxable * 0.015).toFixed(2)}</StateTax>
+        <LocalTax>${(totalTaxable * 0.03).toFixed(2)}</LocalTax>
+        <TotalTaxCollected>${totalTax.toFixed(2)}</TotalTaxCollected>
+        <TransactionCount>${currentOrders.length}</TransactionCount>
+    </Summary>
     
-    <ReturnSummary>
-        <TotalStateTax>${(totalTaxable * 0.015).toFixed(2)}</TotalStateTax>
-        <TotalLocalTax>${(totalTaxable * 0.03).toFixed(2)}</TotalLocalTax>
-        <TotalTaxDue>${totalTax.toFixed(2)}</TotalTaxDue>
-        <NumberOfTransactions>${currentOrders.length}</NumberOfTransactions>
-        <TotalTaxableAmount>${totalTaxable.toFixed(2)}</TotalTaxableAmount>
-    </ReturnSummary>
-    
-    <SalesSchedule>
+    <Transactions>
         ${currentOrders.map(order => `
-        <SaleTransaction>
-            <TransactionDate>${new Date(order.date).toISOString().split('T')[0]}</TransactionDate>
-            <TransactionID>${order.id}</TransactionID>
-            <CustomerInfo>${order.customer_email || 'Cash Sale'}</CustomerInfo>
-            <ItemDescription>${order.product_name} ${order.size || ''}</ItemDescription>
-            <Quantity>${order.quantity}</Quantity>
-            <UnitPrice>${parseFloat(order.unit_price).toFixed(2)}</UnitPrice>
-            <Subtotal>${parseFloat(order.subtotal).toFixed(2)}</Subtotal>
-            <ShippingCharge>${parseFloat(order.shipping_cost || 0).toFixed(2)}</ShippingCharge>
-            <TaxableAmount>${(parseFloat(order.subtotal) + parseFloat(order.shipping_cost || 0)).toFixed(2)}</TaxableAmount>
-            <TaxCollected>${parseFloat(order.tax_amount || 0).toFixed(2)}</TaxCollected>
-            <TotalAmount>${parseFloat(order.total_amount).toFixed(2)}</TotalAmount>
-            <PaymentReference>${order.paypal_order_id || 'N/A'}</PaymentReference>
-        </SaleTransaction>`).join('')}
-    </SalesSchedule>
-</ArkansasTaxReturn>`;
+        <Transaction>
+            <Date>${new Date(order.date).toISOString().split('T')[0]}</Date>
+            <ID>${order.id}</ID>
+            <Description>${order.product_name} ${order.size || ''}</Description>
+            <Qty>${order.quantity}</Qty>
+            <Amount>${parseFloat(order.subtotal).toFixed(2)}</Amount>
+            <Shipping>${parseFloat(order.shipping_cost || 0).toFixed(2)}</Shipping>
+            <Taxable>${(parseFloat(order.subtotal) + parseFloat(order.shipping_cost || 0)).toFixed(2)}</Taxable>
+            <Tax>${parseFloat(order.tax_amount || 0).toFixed(2)}</Tax>
+            <Total>${parseFloat(order.total_amount).toFixed(2)}</Total>
+        </Transaction>`).join('')}
+    </Transactions>
+</TaxReturn>`;
             
             downloadFile(xmlContent, `rells-kitchen-adap-${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}.xml`, 'application/xml');
             showMessage('ADAP XML exported successfully!', 'success');
