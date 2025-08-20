@@ -549,9 +549,21 @@ class PaymentHandler {
                 
                 if (taxResponse.ok) {
                     const taxData = await taxResponse.json();
-                    taxAmount = taxData.tax.taxAmount || 0;
-                    if (taxAmount > 0) {
-                        taxLabel = `Tax (${taxData.tax.reason}):`;
+                    // Find tax amount for the selected shipping method
+                    if (this.shippingMethod && taxData.shippingOptions) {
+                        const selectedOption = taxData.shippingOptions.find(opt => opt.shippingService === this.shippingMethod);
+                        if (selectedOption) {
+                            taxAmount = selectedOption.taxAmount || 0;
+                            if (taxAmount > 0) {
+                                taxLabel = `Tax (${selectedOption.taxReason}):`;
+                            }
+                        }
+                    } else {
+                        // Fallback to general tax if no shipping method selected
+                        taxAmount = taxData.tax.taxAmount || 0;
+                        if (taxAmount > 0) {
+                            taxLabel = `Tax (${taxData.tax.reason}):`;
+                        }
                     }
                 }
             } catch (error) {
@@ -873,8 +885,18 @@ class PaymentHandler {
             
             if (taxResponse.ok) {
                 const taxData = await taxResponse.json();
-                taxAmount = taxData.tax.taxAmount || 0;
-                console.log('Tax calculation:', taxData.tax);
+                // Find tax amount for the selected shipping method
+                if (this.shippingMethod && taxData.shippingOptions) {
+                    const selectedOption = taxData.shippingOptions.find(opt => opt.shippingService === this.shippingMethod);
+                    if (selectedOption) {
+                        taxAmount = selectedOption.taxAmount || 0;
+                        console.log('Tax calculation for shipping method:', selectedOption);
+                    }
+                } else {
+                    // Fallback to general tax if no shipping method selected
+                    taxAmount = taxData.tax.taxAmount || 0;
+                    console.log('Tax calculation:', taxData.tax);
+                }
             } else {
                 console.warn('Tax calculation failed, proceeding without tax');
             }

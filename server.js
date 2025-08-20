@@ -1205,11 +1205,12 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
       };
     }
     
-    const taxCalculation = taxCalculator.calculateTax(subtotal, shippingAddress);
-    
     // Calculate totals for each shipping option
     const orderOptions = shippingRates.map(rate => {
       const shippingCost = rate.cost;
+      // In Arkansas, shipping is taxable - calculate tax on subtotal + shipping
+      const taxableAmount = subtotal + shippingCost;
+      const taxCalculation = taxCalculator.calculateTax(taxableAmount, shippingAddress);
       const taxAmount = taxCalculation.taxAmount;
       const total = subtotal + shippingCost + taxAmount;
       
@@ -1230,7 +1231,12 @@ app.post('/api/calculate-order-total', optionalAuth, async (req, res) => {
     res.json({
       success: true,
       subtotal: subtotal,
-      tax: taxCalculation,
+      tax: orderOptions.length > 0 ? {
+        taxAmount: orderOptions[0].taxAmount,
+        taxRate: orderOptions[0].taxRate,
+        taxableAmount: subtotal + (orderOptions[0].shippingCost || 0),
+        reason: orderOptions[0].taxReason
+      } : { taxAmount: 0, taxRate: 0, taxableAmount: subtotal, reason: 'No shipping selected' },
       shippingOptions: orderOptions,
       packageInfo: { weight, dimensions }
     });
