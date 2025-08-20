@@ -2271,29 +2271,39 @@ app.get('/api/admin/tax-report', async (req, res) => {
     const { startDate, endDate } = req.query;
     
     // Build query with optional date filters
+    // Note: Some columns might not exist in all environments, using COALESCE for safety
     let query = `
       SELECT 
         o.id,
         o.created_at as date,
         o.customer_email,
-        o.customer_name,
+        COALESCE(o.customer_name, o.customer_email) as customer_name,
         p.name as product_name,
         sp.size,
         o.quantity,
         o.price as unit_price,
-        o.subtotal,
-        o.shipping_cost,
-        o.tax_amount,
+        COALESCE(o.subtotal, o.price * o.quantity) as subtotal,
+        COALESCE(o.shipping_cost, 0) as shipping_cost,
+        COALESCE(o.tax_amount, 0) as tax_amount,
         o.total_amount,
-        o.shipping_zip,
-        o.shipping_state,
+        COALESCE(o.shipping_zip, '') as shipping_zip,
+        COALESCE(o.shipping_state, 
+          CASE 
+            WHEN o.shipping_zip LIKE '71%' OR o.shipping_zip LIKE '72%' THEN 'AR'
+            ELSE ''
+          END
+        ) as shipping_state,
         o.status,
         o.paypal_order_id
       FROM orders o 
       JOIN products p ON o.product_id = p.id 
       LEFT JOIN sub_products sp ON o.sub_product_id = sp.id 
       WHERE o.status IN ('completed', 'shipped', 'delivered')
-        AND o.shipping_state = 'AR'
+        AND (
+          o.shipping_state = 'AR' 
+          OR o.shipping_zip LIKE '71%' 
+          OR o.shipping_zip LIKE '72%'
+        )
     `;
     
     const queryParams = [];
@@ -2327,7 +2337,11 @@ app.get('/api/admin/tax-report', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching tax report:', error);
-    res.status(500).json({ error: 'Failed to fetch tax report data' });
+    console.error('Query error details:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch tax report data',
+      details: error.message 
+    });
   }
 });
 
