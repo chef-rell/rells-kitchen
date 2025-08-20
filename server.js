@@ -2281,8 +2281,8 @@ app.get('/api/admin/tax-report', async (req, res) => {
         p.name as product_name,
         sp.size,
         o.quantity,
-        o.price as unit_price,
-        COALESCE(o.subtotal, o.price * o.quantity) as subtotal,
+        COALESCE(o.subtotal / NULLIF(o.quantity, 0), 0) as unit_price,
+        COALESCE(o.subtotal, 0) as subtotal,
         COALESCE(o.shipping_cost, 0) as shipping_cost,
         COALESCE(o.tax_amount, 0) as tax_amount,
         o.total_amount,
@@ -2300,7 +2300,7 @@ app.get('/api/admin/tax-report', async (req, res) => {
       LEFT JOIN sub_products sp ON o.sub_product_id = sp.id 
       WHERE o.status IN ('completed', 'shipped', 'delivered')
         AND (
-          o.shipping_state = 'AR' 
+          COALESCE(o.shipping_state, '') = 'AR' 
           OR o.shipping_zip LIKE '71%' 
           OR o.shipping_zip LIKE '72%'
         )
