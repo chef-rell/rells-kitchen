@@ -435,6 +435,15 @@ Last Updated: ${new Date().toLocaleString()}`;
         document.getElementById('system-status').value = statusText;
     }
 
+    openTaxTracker() {
+        // Get the admin key from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const adminKey = urlParams.get('key');
+        
+        // Open tax tracker with admin key
+        window.open(`/admin-tax-tracker.html?key=${adminKey}`, '_blank');
+    }
+
     async exportOrders() {
         try {
             const response = await fetch('/api/admin/export-orders', {
@@ -497,5 +506,7 @@ Last Updated: ${new Date().toLocaleString()}`;
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new AdminDashboard();
+    const adminDashboard = new AdminDashboard();
+    // Make openTaxTracker globally accessible
+    window.openTaxTracker = () => adminDashboard.openTaxTracker();
 });

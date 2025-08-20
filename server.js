@@ -2242,6 +2242,72 @@ app.get('/api/admin/inventory', requireAdmin, async (req, res) => {
   }
 });
 
+// Tax reporting endpoint - fetches completed orders for ADAP reporting
+app.get('/api/admin/tax-report', requireAdmin, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    // Build query with optional date filters
+    let query = `
+      SELECT 
+        o.id,
+        o.created_at as date,
+        o.customer_email,
+        o.customer_name,
+        p.name as product_name,
+        sp.size,
+        o.quantity,
+        o.price as unit_price,
+        o.subtotal,
+        o.shipping_cost,
+        o.tax_amount,
+        o.total_amount,
+        o.shipping_zip,
+        o.shipping_state,
+        o.status,
+        o.paypal_order_id
+      FROM orders o 
+      JOIN products p ON o.product_id = p.id 
+      LEFT JOIN sub_products sp ON o.sub_product_id = sp.id 
+      WHERE o.status IN ('completed', 'shipped', 'delivered')
+        AND o.shipping_state = 'AR'
+    `;
+    
+    const queryParams = [];
+    
+    if (startDate) {
+      queryParams.push(startDate);
+      query += ` AND DATE(o.created_at) >= $${queryParams.length}`;
+    }
+    
+    if (endDate) {
+      queryParams.push(endDate);
+      query += ` AND DATE(o.created_at) <= $${queryParams.length}`;
+    }
+    
+    query += ` ORDER BY o.created_at DESC`;
+    
+    const result = await pool.query(query, queryParams);
+    
+    // Calculate summary statistics
+    const summary = {
+      totalOrders: result.rows.length,
+      totalSales: result.rows.reduce((sum, order) => sum + parseFloat(order.subtotal || 0), 0),
+      totalShipping: result.rows.reduce((sum, order) => sum + parseFloat(order.shipping_cost || 0), 0),
+      totalTax: result.rows.reduce((sum, order) => sum + parseFloat(order.tax_amount || 0), 0),
+      totalRevenue: result.rows.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
+    };
+    
+    res.json({
+      orders: result.rows,
+      summary: summary
+    });
+  } catch (error) {
+    console.error('Error fetching tax report:', error);
+    res.status(500).json({ error: 'Failed to fetch tax report data' });
+  }
+});
+
 app.get('/api/admin/notification-settings', requireAdmin, async (req, res) => {
   try {
     // Load settings from database

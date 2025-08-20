@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rell's Kitchen - Admin Tax Tracker</title>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        .tax-tracker-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .tracker-header {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            color: white;
+            text-align: center;
+        }
+        
+        .tracker-header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .sync-section {
+            background: rgba(0, 245, 255, 0.1);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .sync-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .date-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .sync-btn {
+            background: var(--neon-cyan);
+            color: var(--bg-dark);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .sync-btn:hover {
+            background: var(--neon-purple);
+            transform: translateY(-2px);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(128, 0, 255, 0.1));
+            border: 1px solid var(--neon-cyan);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            color: var(--text-light);
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+        
+        .stat-card .value {
+            color: var(--neon-cyan);
+            font-size: 2em;
+            font-weight: bold;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .orders-table {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .orders-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .orders-table th {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .orders-table td {
+            padding: 12px 15px;
+            color: var(--text-light);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .orders-table tr:hover {
+            background: rgba(0, 245, 255, 0.05);
+        }
+        
+        .export-section {
+            background: rgba(128, 0, 255, 0.1);
+            border: 2px solid var(--neon-purple);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 245, 255, 0.4);
+        }
+        
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: var(--neon-cyan);
+        }
+        
+        .loading-indicator.active {
+            display: block;
+        }
+        
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .message.success {
+            background: #2ed573;
+        }
+        
+        .message.error {
+            background: #ff6b6b;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-grid"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1 class="brand-title">RELL'S <span class="usvi-accent">KITCHEN</span></h1>
+                <p class="brand-subtitle">Admin Tax Tracker</p>
+            </div>
+            <div class="nav-links">
+                <a href="/admin" class="nav-link">← Back to Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="tax-tracker-container">
+        <div class="tracker-header">
+            <h1>📊 Sales Tax Tracker</h1>
+            <p>Arkansas Department of Finance (ADAP) Reporting System</p>
+            <p><strong>EIN:</strong> 39-3367884 | <strong>Location:</strong> Sherwood, AR | <strong>Tax Rate:</strong> 4.5%</p>
+        </div>
+
+        <div class="sync-section">
+            <h2>🔄 Sync Orders from Database</h2>
+            <div class="sync-controls">
+                <div class="date-range">
+                    <label>From:</label>
+                    <input type="date" id="startDate" class="size-dropdown">
+                    <label>To:</label>
+                    <input type="date" id="endDate" class="size-dropdown">
+                </div>
+                <button class="sync-btn" onclick="syncOrders()">🔄 Sync Orders</button>
+                <button class="sync-btn" onclick="syncCurrentMonth()">📅 Current Month</button>
+                <button class="sync-btn" onclick="syncLastMonth()">📅 Last Month</button>
+            </div>
+            <div class="loading-indicator" id="loadingIndicator">
+                <p>⏳ Loading orders from database...</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Orders</h3>
+                <div class="value" id="totalOrders">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Sales</h3>
+                <div class="value" id="totalSales">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Shipping</h3>
+                <div class="value" id="totalShipping">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Tax Collected</h3>
+                <div class="value" id="totalTax">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Revenue</h3>
+                <div class="value" id="totalRevenue">$0.00</div>
+            </div>
+        </div>
+
+        <div class="export-section">
+            <h2>📤 Export Options</h2>
+            <div class="export-buttons">
+                <button class="export-btn" onclick="exportCSV()">📊 Export to CSV</button>
+                <button class="export-btn" onclick="exportADAP()">📋 Export ADAP XML</button>
+                <button class="export-btn" onclick="exportMonthlyReport()">📈 Monthly Report</button>
+            </div>
+        </div>
+
+        <div class="orders-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Subtotal</th>
+                        <th>Shipping</th>
+                        <th>Tax</th>
+                        <th>Total</th>
+                        <th>ZIP</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <!-- Orders will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentOrders = [];
+        let adminKey = '';
+
+        // Get admin key from URL or prompt
+        const urlParams = new URLSearchParams(window.location.search);
+        adminKey = urlParams.get('key') || localStorage.getItem('adminKey');
+        
+        if (!adminKey) {
+            adminKey = prompt('Enter admin key:');
+            if (adminKey) {
+                localStorage.setItem('adminKey', adminKey);
+            } else {
+                window.location.href = '/admin';
+            }
+        }
+
+        // Set default dates
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            
+            // Auto-sync current month on load
+            syncCurrentMonth();
+        });
+
+        async function syncOrders() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                showMessage('Please select date range', 'error');
+                return;
+            }
+            
+            await fetchOrders(startDate, endDate);
+        }
+
+        async function syncCurrentMonth() {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            
+            document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('endDate').value = lastDay.toISOString().split('T')[0];
+            
+            await fetchOrders(firstDay.toISOString().split('T')[0], lastDay.toISOString().split('T')[0]);
+        }
+
+        async function syncLastMonth() {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+            
+            document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('endDate').value = lastDay.toISOString().split('T')[0];
+            
+            await fetchOrders(firstDay.toISOString().split('T')[0], lastDay.toISOString().split('T')[0]);
+        }
+
+        async function fetchOrders(startDate, endDate) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.classList.add('active');
+            
+            try {
+                const response = await fetch(`/api/admin/tax-report?startDate=${startDate}&endDate=${endDate}&key=${adminKey}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch orders');
+                }
+                
+                const data = await response.json();
+                currentOrders = data.orders;
+                
+                // Update statistics
+                document.getElementById('totalOrders').textContent = data.summary.totalOrders;
+                document.getElementById('totalSales').textContent = `$${data.summary.totalSales.toFixed(2)}`;
+                document.getElementById('totalShipping').textContent = `$${data.summary.totalShipping.toFixed(2)}`;
+                document.getElementById('totalTax').textContent = `$${data.summary.totalTax.toFixed(2)}`;
+                document.getElementById('totalRevenue').textContent = `$${data.summary.totalRevenue.toFixed(2)}`;
+                
+                // Display orders in table
+                displayOrders(currentOrders);
+                
+                showMessage(`Successfully synced ${data.summary.totalOrders} orders`, 'success');
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                showMessage('Failed to fetch orders from database', 'error');
+            } finally {
+                loadingIndicator.classList.remove('active');
+            }
+        }
+
+        function displayOrders(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+            
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(order.date).toLocaleDateString()}</td>
+                    <td>${order.id}</td>
+                    <td>${order.customer_email || 'N/A'}</td>
+                    <td>${order.product_name} ${order.size || ''}</td>
+                    <td>${order.quantity}</td>
+                    <td>$${parseFloat(order.subtotal).toFixed(2)}</td>
+                    <td>$${parseFloat(order.shipping_cost || 0).toFixed(2)}</td>
+                    <td>$${parseFloat(order.tax_amount || 0).toFixed(2)}</td>
+                    <td>$${parseFloat(order.total_amount).toFixed(2)}</td>
+                    <td>${order.shipping_zip}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function exportCSV() {
+            if (currentOrders.length === 0) {
+                showMessage('No orders to export. Please sync orders first.', 'error');
+                return;
+            }
+            
+            const headers = ['Date', 'Order ID', 'Customer', 'Product', 'Size', 'Quantity', 'Unit Price', 'Subtotal', 'Shipping', 'Tax', 'Total', 'ZIP', 'State'];
+            const csvContent = [
+                headers.join(','),
+                ...currentOrders.map(order => [
+                    new Date(order.date).toISOString().split('T')[0],
+                    order.id,
+                    `"${order.customer_email || 'N/A'}"`,
+                    `"${order.product_name}"`,
+                    `"${order.size || 'N/A'}"`,
+                    order.quantity,
+                    parseFloat(order.unit_price).toFixed(2),
+                    parseFloat(order.subtotal).toFixed(2),
+                    parseFloat(order.shipping_cost || 0).toFixed(2),
+                    parseFloat(order.tax_amount || 0).toFixed(2),
+                    parseFloat(order.total_amount).toFixed(2),
+                    order.shipping_zip,
+                    order.shipping_state
+                ].join(','))
+            ].join('\n');
+            
+            downloadFile(csvContent, `rells-kitchen-tax-report-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+            showMessage('CSV exported successfully!', 'success');
+        }
+
+        function exportADAP() {
+            if (currentOrders.length === 0) {
+                showMessage('No orders to export. Please sync orders first.', 'error');
+                return;
+            }
+            
+            const totalSales = currentOrders.reduce((sum, order) => sum + parseFloat(order.subtotal || 0), 0);
+            const totalShipping = currentOrders.reduce((sum, order) => sum + parseFloat(order.shipping_cost || 0), 0);
+            const totalTaxable = totalSales + totalShipping; // Arkansas taxes shipping
+            const totalTax = currentOrders.reduce((sum, order) => sum + parseFloat(order.tax_amount || 0), 0);
+            
+            const currentDate = new Date();
+            const startDate = document.getElementById('startDate').value;
+            const reportDate = new Date(startDate);
+            
+            const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<ExciseTaxReturn>
+    <Header>
+        <TaxYear>${reportDate.getFullYear()}</TaxYear>
+        <Period>${String(reportDate.getMonth() + 1).padStart(2, '0')}</Period>
+        <BusinessName>Rell's Kitchen</BusinessName>
+        <EIN>39-3367884</EIN>
+        <FilingDate>${currentDate.toISOString().split('T')[0]}</FilingDate>
+    </Header>
+    
+    <GrossReceiptsTax>
+        <FoodTax>
+            <TaxableSales>${totalTaxable.toFixed(2)}</TaxableSales>
+            <Rate>0.015000</Rate>
+            <GrossTaxDue>${(totalTaxable * 0.015).toFixed(2)}</GrossTaxDue>
+            <NetTaxDue>${(totalTaxable * 0.015).toFixed(2)}</NetTaxDue>
+        </FoodTax>
+    </GrossReceiptsTax>
+    
+    <LocalTax>
+        <TaxableSales>${totalTaxable.toFixed(2)}</TaxableSales>
+        <LocalRate>0.030000</LocalRate>
+        <LocalTaxDue>${(totalTaxable * 0.03).toFixed(2)}</LocalTaxDue>
+    </LocalTax>
+    
+    <Summary>
+        <TotalStateTaxDue>${(totalTaxable * 0.015).toFixed(2)}</TotalStateTaxDue>
+        <TotalLocalTaxDue>${(totalTaxable * 0.03).toFixed(2)}</TotalLocalTaxDue>
+        <TotalTaxDue>${totalTax.toFixed(2)}</TotalTaxDue>
+        <TotalOrders>${currentOrders.length}</TotalOrders>
+    </Summary>
+    
+    <SalesDetail>
+        ${currentOrders.map(order => `
+        <Sale>
+            <OrderID>${order.id}</OrderID>
+            <Date>${order.date}</Date>
+            <Customer>${order.customer_email || 'N/A'}</Customer>
+            <Product>${order.product_name}</Product>
+            <Size>${order.size || 'N/A'}</Size>
+            <Quantity>${order.quantity}</Quantity>
+            <UnitPrice>${parseFloat(order.unit_price).toFixed(2)}</UnitPrice>
+            <Subtotal>${parseFloat(order.subtotal).toFixed(2)}</Subtotal>
+            <Shipping>${parseFloat(order.shipping_cost || 0).toFixed(2)}</Shipping>
+            <TaxAmount>${parseFloat(order.tax_amount || 0).toFixed(2)}</TaxAmount>
+            <Total>${parseFloat(order.total_amount).toFixed(2)}</Total>
+            <PayPalOrderID>${order.paypal_order_id || 'N/A'}</PayPalOrderID>
+        </Sale>`).join('')}
+    </SalesDetail>
+</ExciseTaxReturn>`;
+            
+            downloadFile(xmlContent, `rells-kitchen-adap-${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}.xml`, 'application/xml');
+            showMessage('ADAP XML exported successfully!', 'success');
+        }
+
+        function exportMonthlyReport() {
+            if (currentOrders.length === 0) {
+                showMessage('No orders to export. Please sync orders first.', 'error');
+                return;
+            }
+            
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const totalSales = currentOrders.reduce((sum, order) => sum + parseFloat(order.subtotal || 0), 0);
+            const totalShipping = currentOrders.reduce((sum, order) => sum + parseFloat(order.shipping_cost || 0), 0);
+            const totalTax = currentOrders.reduce((sum, order) => sum + parseFloat(order.tax_amount || 0), 0);
+            const totalRevenue = currentOrders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+            
+            const reportContent = `
+RELL'S KITCHEN - MONTHLY TAX REPORT
+====================================
+Business: Rell's Kitchen (Arkansas LLC)
+EIN: 39-3367884
+Location: Sherwood, AR
+Report Period: ${startDate} to ${endDate}
+
+SUMMARY STATISTICS
+==================
+Total Orders: ${currentOrders.length}
+Total Product Sales: $${totalSales.toFixed(2)}
+Total Shipping Collected: $${totalShipping.toFixed(2)}
+Total Taxable Amount: $${(totalSales + totalShipping).toFixed(2)}
+Total Tax Collected: $${totalTax.toFixed(2)}
+Total Revenue: $${totalRevenue.toFixed(2)}
+
+TAX BREAKDOWN (Arkansas 4.5%)
+==============================
+State Food Tax (1.5%): $${((totalSales + totalShipping) * 0.015).toFixed(2)}
+County Tax (1%): $${((totalSales + totalShipping) * 0.01).toFixed(2)}
+City Tax (2%): $${((totalSales + totalShipping) * 0.02).toFixed(2)}
+
+DETAILED TRANSACTIONS
+=====================
+${currentOrders.map(order => `
+Date: ${new Date(order.date).toLocaleDateString()}
+Order ID: ${order.id}
+Customer: ${order.customer_email || 'N/A'}
+Product: ${order.product_name} ${order.size || ''}
+Quantity: ${order.quantity}
+Subtotal: $${parseFloat(order.subtotal).toFixed(2)}
+Shipping: $${parseFloat(order.shipping_cost || 0).toFixed(2)}
+Tax: $${parseFloat(order.tax_amount || 0).toFixed(2)}
+Total: $${parseFloat(order.total_amount).toFixed(2)}
+---`).join('\n')}
+
+Generated: ${new Date().toLocaleString()}
+            `;
+            
+            downloadFile(reportContent, `rells-kitchen-monthly-report-${startDate}.txt`, 'text/plain');
+            showMessage('Monthly report exported successfully!', 'success');
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type: type });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
