@@ -50,6 +50,27 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Testing**: Admin endpoints available at `/admin/*` with proper key
 - **Git**: Main branch, commits include Claude attribution
 
+### Database Schema Notes (CRITICAL for Future Development)
+**ORDERS TABLE STRUCTURE** (Railway PostgreSQL):
+```sql
+-- Columns that EXIST:
+id (text), product_id (text), sub_product_id (text), customer_email (text), 
+customer_name (text), shipping_street (text), shipping_city (text), 
+shipping_state (text), shipping_zip (text), shipping_method (text), 
+shipping_cost (numeric), coupon_code (text), coupon_discount (numeric), 
+quantity (integer), total_amount (numeric), paypal_order_id (text), 
+order_notes (text), status (text), created_at (timestamp)
+
+-- Columns that DO NOT EXIST:
+subtotal, price, unit_price, tax_amount
+```
+
+**IMPORTANT**: When creating queries against orders table:
+- Calculate subtotal from: `total_amount - shipping_cost + coupon_discount`
+- Calculate unit_price from: `subtotal / quantity`  
+- Calculate tax from: `total_amount - subtotal - shipping_cost + coupon_discount`
+- NEVER assume columns exist - always inspect schema first using test endpoint
+
 ## Completed Systems
 
 ### USPS Shipping Integration (2025-08-02) - FULLY OPERATIONAL ✅
@@ -99,6 +120,17 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Security**: ✅ requireAdmin middleware for admin-only routes
 - **Database**: ✅ UPSERT operations ensure settings persist properly
 
+### Tax Tracker Integration (2025-08-20) - FULLY OPERATIONAL ✅
+**STATUS**: Complete ADAP tax reporting system with database integration
+- **Admin Integration**: ✅ Tax Tracker button in admin dashboard opens in new tab
+- **Database Sync**: ✅ Auto-pulls Arkansas orders from production PostgreSQL database
+- **API Endpoint**: ✅ `/api/admin/tax-report` with admin key authentication
+- **Data Calculation**: ✅ Reverse-engineers subtotal/tax from total_amount (no separate columns exist)
+- **Export Formats**: ✅ CSV, ADAP XML, Monthly Report for Arkansas Department of Finance
+- **Date Filtering**: ✅ Current month, last month, or custom date ranges
+- **Real Orders**: ✅ Successfully processes 5+ completed Arkansas orders
+- **CSP Compliance**: ✅ All JavaScript uses event listeners (no inline handlers)
+
 **NEXT STEPS** (if session disconnected):
 1. **Email Notifications**: Implement nodemailer for admin alerts
    - Install: `npm install nodemailer`
@@ -125,6 +157,8 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - [x] Build admin management system (COMPLETED)
 - [x] Rotate exposed PostgreSQL credentials (COMPLETED)
 - [x] Fix product display issue on live site (COMPLETED)
+- [x] Fix tax calculation to include shipping in taxable amount (COMPLETED)
+- [x] Integrate sales tax tracker with order management for ADAP reporting (COMPLETED)
 - [ ] **NEXT**: Implement email notifications for admin alerts
 - [ ] Implement SMS notifications for critical alerts
 - [ ] Add real-time notifications on order completion
@@ -142,6 +176,8 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 ## Commands
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)
 - **Admin Access**: Add `?key=rells-kitchen-admin-2025` to admin endpoints
+- **Tax Tracker**: Access via Admin Dashboard → System → Tax Tracker button
+- **Database Schema Check**: `GET /api/admin/test-orders?key=rells-kitchen-admin-2025`
 - **USPS Test**: `curl -X POST http://localhost:3001/api/calculate-shipping -H "Content-Type: application/json" -d '{"zipCode":"10001","productSize":"medium","quantity":2}'`
 
 ## Memory
