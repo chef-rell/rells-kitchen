@@ -469,56 +469,75 @@
             const startDate = document.getElementById('startDate').value;
             const reportDate = new Date(startDate);
             
+            // Create Arkansas ADAP-compatible XML format
             const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<ExciseTaxReturn>
-    <Header>
-        <TaxYear>${reportDate.getFullYear()}</TaxYear>
-        <Period>${String(reportDate.getMonth() + 1).padStart(2, '0')}</Period>
-        <BusinessName>Rell's Kitchen</BusinessName>
-        <EIN>39-3367884</EIN>
-        <FilingDate>${currentDate.toISOString().split('T')[0]}</FilingDate>
-    </Header>
+<ArkansasTaxReturn xmlns="http://www.arkansas.gov/dfa/excise" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <ReturnHeader>
+        <TaxPeriod>
+            <Year>${reportDate.getFullYear()}</Year>
+            <Month>${String(reportDate.getMonth() + 1).padStart(2, '0')}</Month>
+        </TaxPeriod>
+        <Taxpayer>
+            <BusinessName>Rell's Kitchen</BusinessName>
+            <FederalEIN>39-3367884</FederalEIN>
+            <BusinessAddress>
+                <City>Sherwood</City>
+                <State>AR</State>
+                <ZipCode>72120</ZipCode>
+            </BusinessAddress>
+        </Taxpayer>
+        <PreparationDate>${currentDate.toISOString().split('T')[0]}</PreparationDate>
+    </ReturnHeader>
     
-    <GrossReceiptsTax>
-        <FoodTax>
-            <TaxableSales>${totalTaxable.toFixed(2)}</TaxableSales>
-            <Rate>0.015000</Rate>
-            <GrossTaxDue>${(totalTaxable * 0.015).toFixed(2)}</GrossTaxDue>
-            <NetTaxDue>${(totalTaxable * 0.015).toFixed(2)}</NetTaxDue>
-        </FoodTax>
-    </GrossReceiptsTax>
+    <GrossReceiptsSchedule>
+        <StateGrossReceiptsTax>
+            <RetailFoodSales>
+                <TaxableAmount>${totalTaxable.toFixed(2)}</TaxableAmount>
+                <TaxRate>1.500</TaxRate>
+                <TaxDue>${(totalTaxable * 0.015).toFixed(2)}</TaxDue>
+            </RetailFoodSales>
+        </StateGrossReceiptsTax>
+        
+        <LocalTaxes>
+            <CountyTax>
+                <TaxableAmount>${totalTaxable.toFixed(2)}</TaxableAmount>
+                <TaxRate>1.000</TaxRate>
+                <TaxDue>${(totalTaxable * 0.01).toFixed(2)}</TaxDue>
+            </CountyTax>
+            <CityTax>
+                <TaxableAmount>${totalTaxable.toFixed(2)}</TaxableAmount>
+                <TaxRate>2.000</TaxRate>
+                <TaxDue>${(totalTaxable * 0.02).toFixed(2)}</TaxDue>
+            </CityTax>
+        </LocalTaxes>
+    </GrossReceiptsSchedule>
     
-    <LocalTax>
-        <TaxableSales>${totalTaxable.toFixed(2)}</TaxableSales>
-        <LocalRate>0.030000</LocalRate>
-        <LocalTaxDue>${(totalTaxable * 0.03).toFixed(2)}</LocalTaxDue>
-    </LocalTax>
-    
-    <Summary>
-        <TotalStateTaxDue>${(totalTaxable * 0.015).toFixed(2)}</TotalStateTaxDue>
-        <TotalLocalTaxDue>${(totalTaxable * 0.03).toFixed(2)}</TotalLocalTaxDue>
+    <ReturnSummary>
+        <TotalStateTax>${(totalTaxable * 0.015).toFixed(2)}</TotalStateTax>
+        <TotalLocalTax>${(totalTaxable * 0.03).toFixed(2)}</TotalLocalTax>
         <TotalTaxDue>${totalTax.toFixed(2)}</TotalTaxDue>
-        <TotalOrders>${currentOrders.length}</TotalOrders>
-    </Summary>
+        <NumberOfTransactions>${currentOrders.length}</NumberOfTransactions>
+        <TotalTaxableAmount>${totalTaxable.toFixed(2)}</TotalTaxableAmount>
+    </ReturnSummary>
     
-    <SalesDetail>
+    <SalesSchedule>
         ${currentOrders.map(order => `
-        <Sale>
-            <OrderID>${order.id}</OrderID>
-            <Date>${order.date}</Date>
-            <Customer>${order.customer_email || 'N/A'}</Customer>
-            <Product>${order.product_name}</Product>
-            <Size>${order.size || 'N/A'}</Size>
+        <SaleTransaction>
+            <TransactionDate>${new Date(order.date).toISOString().split('T')[0]}</TransactionDate>
+            <TransactionID>${order.id}</TransactionID>
+            <CustomerInfo>${order.customer_email || 'Cash Sale'}</CustomerInfo>
+            <ItemDescription>${order.product_name} ${order.size || ''}</ItemDescription>
             <Quantity>${order.quantity}</Quantity>
             <UnitPrice>${parseFloat(order.unit_price).toFixed(2)}</UnitPrice>
             <Subtotal>${parseFloat(order.subtotal).toFixed(2)}</Subtotal>
-            <Shipping>${parseFloat(order.shipping_cost || 0).toFixed(2)}</Shipping>
-            <TaxAmount>${parseFloat(order.tax_amount || 0).toFixed(2)}</TaxAmount>
-            <Total>${parseFloat(order.total_amount).toFixed(2)}</Total>
-            <PayPalOrderID>${order.paypal_order_id || 'N/A'}</PayPalOrderID>
-        </Sale>`).join('')}
-    </SalesDetail>
-</ExciseTaxReturn>`;
+            <ShippingCharge>${parseFloat(order.shipping_cost || 0).toFixed(2)}</ShippingCharge>
+            <TaxableAmount>${(parseFloat(order.subtotal) + parseFloat(order.shipping_cost || 0)).toFixed(2)}</TaxableAmount>
+            <TaxCollected>${parseFloat(order.tax_amount || 0).toFixed(2)}</TaxCollected>
+            <TotalAmount>${parseFloat(order.total_amount).toFixed(2)}</TotalAmount>
+            <PaymentReference>${order.paypal_order_id || 'N/A'}</PaymentReference>
+        </SaleTransaction>`).join('')}
+    </SalesSchedule>
+</ArkansasTaxReturn>`;
             
             downloadFile(xmlContent, `rells-kitchen-adap-${reportDate.getFullYear()}-${String(reportDate.getMonth() + 1).padStart(2, '0')}.xml`, 'application/xml');
             showMessage('ADAP XML exported successfully!', 'success');
