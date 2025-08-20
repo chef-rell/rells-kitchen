@@ -93,6 +93,7 @@ class AdminDashboard {
         document.getElementById('test-email')?.addEventListener('click', () => this.testEmailNotification());
         document.getElementById('test-sms')?.addEventListener('click', () => this.testSMSNotification());
         document.getElementById('export-orders')?.addEventListener('click', () => this.exportOrders());
+        document.getElementById('tax-tracker')?.addEventListener('click', () => this.openTaxTracker());
         document.getElementById('backup-data')?.addEventListener('click', () => this.backupDatabase());
         
         // Auth button
@@ -506,7 +507,5 @@ Last Updated: ${new Date().toLocaleString()}`;
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const adminDashboard = new AdminDashboard();
-    // Make openTaxTracker globally accessible
-    window.openTaxTracker = () => adminDashboard.openTaxTracker();
+    new AdminDashboard();
 });
