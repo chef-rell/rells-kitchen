@@ -2270,8 +2270,8 @@ app.get('/api/admin/tax-report', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    // Build query with optional date filters
-    // Note: Some columns might not exist in all environments, using COALESCE for safety
+    // Build query using only columns that actually exist in the orders table
+    // Based on schema: total_amount, shipping_cost, coupon_discount, quantity
     let query = `
       SELECT 
         o.id,
@@ -2281,29 +2281,38 @@ app.get('/api/admin/tax-report', async (req, res) => {
         p.name as product_name,
         sp.size,
         o.quantity,
-        COALESCE(o.subtotal / NULLIF(o.quantity, 0), 0) as unit_price,
-        COALESCE(o.subtotal, 0) as subtotal,
+        -- Calculate subtotal from total_amount - shipping_cost + coupon_discount
+        COALESCE(
+          o.total_amount - COALESCE(o.shipping_cost, 0) + COALESCE(o.coupon_discount, 0),
+          o.total_amount
+        ) as subtotal_before_tax,
+        -- Calculate unit price from subtotal_before_tax / quantity  
+        COALESCE(
+          (o.total_amount - COALESCE(o.shipping_cost, 0) + COALESCE(o.coupon_discount, 0)) / NULLIF(o.quantity, 0),
+          0
+        ) as unit_price,
+        -- Calculate subtotal (before tax): reverse engineer from total
+        -- If tax is 4.5%: subtotal = (total + discount - shipping) / 1.045
+        COALESCE(
+          (o.total_amount + COALESCE(o.coupon_discount, 0) - COALESCE(o.shipping_cost, 0)) / 1.045,
+          o.total_amount - COALESCE(o.shipping_cost, 0) + COALESCE(o.coupon_discount, 0)
+        ) as subtotal,
         COALESCE(o.shipping_cost, 0) as shipping_cost,
-        COALESCE(o.tax_amount, 0) as tax_amount,
+        -- Calculate tax: total - subtotal - shipping + discount
+        COALESCE(
+          o.total_amount - ((o.total_amount + COALESCE(o.coupon_discount, 0) - COALESCE(o.shipping_cost, 0)) / 1.045) - COALESCE(o.shipping_cost, 0) + COALESCE(o.coupon_discount, 0),
+          0
+        ) as tax_amount,
         o.total_amount,
         COALESCE(o.shipping_zip, '') as shipping_zip,
-        COALESCE(o.shipping_state, 
-          CASE 
-            WHEN o.shipping_zip LIKE '71%' OR o.shipping_zip LIKE '72%' THEN 'AR'
-            ELSE ''
-          END
-        ) as shipping_state,
+        COALESCE(o.shipping_state, 'AR') as shipping_state,
         o.status,
         o.paypal_order_id
       FROM orders o 
       JOIN products p ON o.product_id = p.id 
       LEFT JOIN sub_products sp ON o.sub_product_id = sp.id 
       WHERE o.status IN ('completed', 'shipped', 'delivered')
-        AND (
-          COALESCE(o.shipping_state, '') = 'AR' 
-          OR o.shipping_zip LIKE '71%' 
-          OR o.shipping_zip LIKE '72%'
-        )
+        AND o.shipping_state = 'AR'
     `;
     
     const queryParams = [];
