@@ -22,8 +22,9 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 ## Current Architecture
 
 ### Database
-- **Production**: PostgreSQL on Railway
-- **Local Development**: SQLite fallback
+- **Production**: PostgreSQL on Railway (ALWAYS USE THIS)
+- **Local Development**: ~~SQLite fallback~~ (NO LONGER USED - Always connect to Railway PostgreSQL)
+- **IMPORTANT**: Always use the PostgreSQL database hosted on Railway. Local SQLite is deprecated.
 - **Key Tables**: users, products, sub_products, orders, subscriptions, coupons
 
 ### Key Products
@@ -44,6 +45,8 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 
 ## Development Notes
 - **Environment Variables**: Use `.env.example` as template
+- **Database Connection**: ALWAYS use Railway PostgreSQL via DATABASE_URL environment variable
+- **NO LOCAL DATABASE**: SQLite is deprecated. All development and testing must use Railway PostgreSQL
 - **Testing**: Admin endpoints available at `/admin/*` with proper key
 - **Git**: Main branch, commits include Claude attribution
 
@@ -126,14 +129,15 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - [ ] Implement SMS notifications for critical alerts
 - [ ] Add real-time notifications on order completion
 
-## Current System Status (2025-08-02) ✅
+## Current System Status (2025-08-20) ✅
 **E-COMMERCE PLATFORM**: Fully operational with complete payment processing
 - **Shipping**: Real-time USPS rates via OAuth API + fallback system
-- **Tax**: Arkansas 4.5% compliance with proper nexus management
+- **Tax**: Arkansas 4.5% compliance with proper nexus management (includes shipping in taxable amount)
 - **Payment**: PayPal redirect flow with itemized tax/shipping breakdown
-- **Database**: PostgreSQL production, SQLite local fallback
+- **Database**: PostgreSQL on Railway (PRODUCTION ONLY - no local SQLite)
 - **Security**: JWT auth, rate limiting, environment variables
 - **Performance**: USPS rate caching, optimized database queries
+- **Admin Tools**: Integrated tax tracker for ADAP reporting with auto-sync from database
 
 ## Commands
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)
