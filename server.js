@@ -676,7 +676,7 @@ app.get('/api/sub-products/:productId', async (req, res) => {
 });
 
 app.post('/api/validate-coupon', optionalAuth, async (req, res) => {
-  const { code, subtotal } = req.body;
+  const { code, subtotal, shippingCost } = req.body;
   
   if (!code || !subtotal) {
     return res.status(400).json({ error: 'Coupon code and subtotal required' });
@@ -695,11 +695,14 @@ app.post('/api/validate-coupon', optionalAuth, async (req, res) => {
     
     const coupon = result.rows[0];
     
+    // Calculate discount on subtotal + shipping
+    const baseAmount = parseFloat(subtotal) + parseFloat(shippingCost || 0);
+    
     let discountAmount = 0;
     if (coupon.discount_type === 'percentage') {
-      discountAmount = (parseFloat(subtotal) * coupon.discount_value / 100);
+      discountAmount = (baseAmount * coupon.discount_value / 100);
     } else if (coupon.discount_type === 'fixed') {
-      discountAmount = Math.min(coupon.discount_value, parseFloat(subtotal));
+      discountAmount = Math.min(coupon.discount_value, baseAmount);
     }
     
     res.json({

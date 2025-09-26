@@ -161,10 +161,10 @@ class PaymentHandler {
                 
                 if (subscriberStatus) {
                     if (this.currentUser.isSubscribed) {
-                        subscriberStatus.textContent = '🎁 Supporter Plan Active - 10% Discount Applied!';
+                        subscriberStatus.textContent = '🎁 Supporter Plan Active - 10% Discount Applied (products + shipping)!';
                         subscriberStatus.className = 'subscriber-status subscriber';
                     } else if (this.currentUser.role !== 'guest') {
-                        subscriberStatus.innerHTML = '💡 <a href="/account" style="color: var(--neon-cyan); text-decoration: none;">Join Supporter Plan</a> for 10% off all purchases';
+                        subscriberStatus.innerHTML = '💡 <a href="/account" style="color: var(--neon-cyan); text-decoration: none;">Join Supporter Plan</a> for 10% off all purchases (products + shipping)';
                         subscriberStatus.className = 'subscriber-status not-subscriber';
                     } else {
                         subscriberStatus.textContent = '';
@@ -517,12 +517,17 @@ class PaymentHandler {
         if (!this.selectedSubProduct) return;
         
         const subtotal = (this.selectedSubProduct.price * this.quantity).toFixed(2);
-        const couponDiscountAmount = this.calculateCouponDiscount(subtotal);
         
-        // Calculate subscriber discount
+        // Calculate base amount (subtotal + shipping) for discount calculation
+        const baseAmount = parseFloat(subtotal) + parseFloat(this.shippingCost || 0);
+        
+        // Calculate coupon discount on base amount (product + shipping)
+        const couponDiscountAmount = this.calculateCouponDiscount(baseAmount);
+        
+        // Calculate subscriber discount on base amount (product + shipping)
         let subscriberDiscountAmount = 0;
         if (this.isSubscriber) {
-            subscriberDiscountAmount = parseFloat(subtotal) * 0.10; // 10% discount
+            subscriberDiscountAmount = baseAmount * 0.10; // 10% discount on product + shipping
             this.subscriberDiscount = subscriberDiscountAmount;
         }
         
@@ -633,7 +638,8 @@ class PaymentHandler {
                 credentials: 'include',
                 body: JSON.stringify({
                     code: enteredCode,
-                    subtotal: subtotal
+                    subtotal: subtotal,
+                    shippingCost: this.shippingCost || 0
                 })
             });
             
@@ -643,7 +649,10 @@ class PaymentHandler {
                 this.couponCode = data.code;
                 this.validatedCoupon = data;
                 await this.updateTotalPrice();
-                this.showCouponStatus(`Coupon applied! ${data.discountValue}% off`, 'success');
+                const discountText = data.discountType === 'percentage' 
+                    ? `${data.discountValue}% off (products + shipping)`
+                    : `$${data.discountValue} off (products + shipping)`;
+                this.showCouponStatus(`Coupon applied! ${discountText}`, 'success');
             } else {
                 this.couponCode = '';
                 this.validatedCoupon = null;
@@ -656,16 +665,16 @@ class PaymentHandler {
         }
     }
 
-    calculateCouponDiscount(subtotal) {
+    calculateCouponDiscount(baseAmount) {
         if (!this.couponCode || !this.validatedCoupon) {
             return 0;
         }
         
-        // Use the server-validated discount amount
+        // Use the server-validated discount amount on product + shipping
         if (this.validatedCoupon.discountType === 'percentage') {
-            return (parseFloat(subtotal) * this.validatedCoupon.discountValue / 100);
+            return (parseFloat(baseAmount) * this.validatedCoupon.discountValue / 100);
         } else if (this.validatedCoupon.discountType === 'fixed') {
-            return Math.min(this.validatedCoupon.discountValue, parseFloat(subtotal));
+            return Math.min(this.validatedCoupon.discountValue, parseFloat(baseAmount));
         }
         
         return 0;
@@ -1247,8 +1256,8 @@ class PaymentHandler {
         // Clear existing options
         shippingSelect.innerHTML = '';
 
-        // Filter out LOCAL_PICKUP from available options - HIDDEN FOR NOW
-        const availableRates = rates.filter(rate => rate.service !== 'LOCAL_PICKUP');
+        // Use all available rates including LOCAL_PICKUP
+        const availableRates = rates;
 
         // Add shipping options
         availableRates.forEach((rate, index) => {
@@ -1261,12 +1270,12 @@ class PaymentHandler {
             // Default selection logic based on user type
             let shouldSelect = false;
             
-            // For guests or non-logged in users, prefer first available option (LOCAL_PICKUP is hidden)
+            // For guests or non-logged in users, prefer LOCAL_PICKUP (free option)
             if (!this.currentUser || this.currentUser.role === 'guest') {
-                if (index === 0) {
-                    // Default to first available option since LOCAL_PICKUP is hidden
+                if (rate.service === 'LOCAL_PICKUP') {
+                    // Default to LOCAL_PICKUP for guests
                     shouldSelect = true;
-                    console.log('Defaulting to first available shipping option for guest');
+                    console.log('Defaulting to LOCAL_PICKUP for guest');
                 }
             } else {
                 // For logged-in members, prefer Ground Advantage
