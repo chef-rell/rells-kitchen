@@ -68,7 +68,36 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-// Serve static files with proper caching headers
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+app.use(limiter);
+
+// Seasonal splash page middleware - MUST come before static files
+if (SEASONAL_MODE) {
+  app.use((req, res, next) => {
+    // Allow access to admin endpoints and API routes when in seasonal mode
+    const isAdminRoute = req.path.startsWith('/admin');
+    const isApiRoute = req.path.startsWith('/api');
+    const isAuthRoute = req.path === '/login' || req.path === '/register';
+
+    // Allow access to the seasonal splash page itself
+    if (req.path === '/seasonal-splash.html') {
+      return next();
+    }
+
+    if (isAdminRoute || isApiRoute || isAuthRoute) {
+      return next();
+    }
+
+    // Serve the splash page for all other routes
+    res.sendFile(path.join(__dirname, 'public', 'seasonal-splash.html'));
+  });
+}
+
+// Serve static files with proper caching headers - AFTER seasonal check
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
   etag: false,
@@ -81,30 +110,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-});
-
-// Seasonal splash page middleware
-if (SEASONAL_MODE) {
-  app.use((req, res, next) => {
-    // Allow access to admin endpoints and API routes when in seasonal mode
-    const isAdminRoute = req.path.startsWith('/admin');
-    const isApiRoute = req.path.startsWith('/api');
-    const isAuthRoute = req.path === '/login' || req.path === '/register';
-
-    if (isAdminRoute || isApiRoute || isAuthRoute) {
-      return next();
-    }
-
-    // Serve the splash page for all other routes
-    res.sendFile(path.join(__dirname, 'public', 'seasonal-splash.html'));
-  });
-}
-
-app.use(limiter);
 
 // PostgreSQL connection using fresh Postgres-S448 service
 const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
