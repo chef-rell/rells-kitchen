@@ -17,6 +17,7 @@ const NotificationService = require('./notification-service');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
+const SEASONAL_MODE = process.env.SEASONAL_MODE === 'true'; // Toggle for seasonal splash page
 
 // Initialize USPS OAuth 2.0 integration
 const uspsIntegration = new USPSOAuthIntegration(
@@ -85,6 +86,24 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100
 });
+
+// Seasonal splash page middleware
+if (SEASONAL_MODE) {
+  app.use((req, res, next) => {
+    // Allow access to admin endpoints and API routes when in seasonal mode
+    const isAdminRoute = req.path.startsWith('/admin');
+    const isApiRoute = req.path.startsWith('/api');
+    const isAuthRoute = req.path === '/login' || req.path === '/register';
+
+    if (isAdminRoute || isApiRoute || isAuthRoute) {
+      return next();
+    }
+
+    // Serve the splash page for all other routes
+    res.sendFile(path.join(__dirname, 'public', 'seasonal-splash.html'));
+  });
+}
+
 app.use(limiter);
 
 // PostgreSQL connection using fresh Postgres-S448 service
