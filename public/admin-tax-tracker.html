@@ -299,20 +299,9 @@
 
     <script>
         let currentOrders = [];
-        let adminKey = '';
 
-        // Get admin key from URL or prompt
-        const urlParams = new URLSearchParams(window.location.search);
-        adminKey = urlParams.get('key') || localStorage.getItem('adminKey');
-        
-        if (!adminKey) {
-            adminKey = prompt('Enter admin key:');
-            if (adminKey) {
-                localStorage.setItem('adminKey', adminKey);
-            } else {
-                window.location.href = '/admin';
-            }
-        }
+        // Access is controlled by the admin login cookie; clear any key saved by older versions
+        try { localStorage.removeItem('adminKey'); } catch (e) {}
 
         // Set default dates and attach event listeners
         document.addEventListener('DOMContentLoaded', () => {
@@ -374,7 +363,11 @@
             loadingIndicator.classList.add('active');
             
             try {
-                const response = await fetch(`/api/admin/tax-report?startDate=${startDate}&endDate=${endDate}&key=${adminKey}`);
+                const response = await fetch(`/api/admin/tax-report?startDate=${startDate}&endDate=${endDate}`);
+                
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('Admin login required. Log in with an admin account and reopen the tax tracker from the admin dashboard.');
+                }
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
