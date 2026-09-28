@@ -149,10 +149,32 @@ subtotal, price, unit_price, tax_amount
 - `/admin*`, `/api*`, `/login`, and `/register` stay reachable while seasonal mode is on
 - Middleware must stay before `express.static` in `server.js` or `index.html` is served instead
 
-### Notifications - PARTIALLY BUILT
+### Notifications - PARTIALLY BUILT (wiring plan drafted, not yet implemented)
 - `notification-service.js` (nodemailer + Twilio) exists, is initialized in `server.js`, and both packages are installed
-- Only the admin test endpoints call it (`/admin/test-notification-service`, `/api/admin/test-email`, SMS test)
-- **Remaining work**: trigger alerts automatically on PayPal capture success, new orders, and low stock, honoring the saved admin notification preferences
+- Only the admin test endpoints call it (`/admin/test-notification-service`, `/api/admin/test-email`, `/api/admin/test-sms`)
+- `sendOrderCompletedAlert(orderData)` and `sendLowStockAlert(name, stock, threshold)` already exist but are never called
+
+#### Current gaps (verified 2026-09-28)
+- **No trigger**: `/api/capture-paypal-payment` (`server.js`, the live checkout path used by `payment-return.html`) inserts the order and decrements `sub_products.inventory_count`, then returns without notifying anyone
+- **Settings ignored**: the service sends to `process.env.ADMIN_EMAIL` / `ADMIN_PHONE` and never reads `admin_settings`. The dashboard saves these keys, which currently have no effect: `admin_email`, `admin_phone`, `email_new_orders`, `email_low_stock`, `sms_critical_alerts`, `sms_out_of_stock`, `low_stock_threshold`
+- **SMS rule hardcoded**: low-stock SMS fires when `stock <= threshold / 2`, unrelated to the `sms_*` toggles
+- **No duplicate guard**: nothing stops the same PayPal order from being recorded twice (e.g. reload of `payment-return.html`), which would also duplicate alerts
+- **Unescaped HTML**: customer name/email are interpolated directly into the alert email HTML
+- **Legacy path**: `/api/process-payment` (SDK-button flow, called only from `public/js/payment.js` `processPayment`) also creates orders; it appears unused since the redirect flow replaced it. Confirm before deciding whether to wire it or delete it
+
+#### Wiring plan (for review; ask before modifying existing code)
+1. **Load settings per alert**: add a helper in `server.js` (e.g. `getNotificationSettings()`) that reads `admin_settings` into an object, falling back to env vars and then the seeded defaults. Pass recipient and toggles into the service methods instead of the service reading env vars.
+2. **Service changes** (`notification-service.js`):
+   - `sendOrderCompletedAlert(orderData, settings)`: email only when `email_new_orders` is true, sent to `settings.admin_email`
+   - `sendLowStockAlert(name, stock, threshold, settings)`: email when `email_low_stock`; SMS when `stock === 0 && sms_out_of_stock`, or `stock > 0 && sms_critical_alerts`
+   - Add an `escapeHtml` helper for every interpolated value
+3. **Order-completed trigger**: in `/api/capture-paypal-payment`, after the order insert and before `res.json`, call the alert without `await` (fire-and-forget with `.catch(console.error)`) so a mail failure never fails or slows checkout.
+4. **Low-stock trigger**: change the inventory decrement to `UPDATE ... RETURNING inventory_count`. Alert only when the count crosses the threshold on this order (`before > threshold && after <= threshold`), plus once when it hits 0. This avoids one alert per order while stock is already low.
+5. **Duplicate guard** (recommended, small): before inserting, check `orders.paypal_order_id`; if it already exists, return the existing order and skip the insert, inventory decrement, and alerts.
+6. **Legacy path**: decide whether `/api/process-payment` and `payment.js processPayment` are removed or get the same wiring.
+7. **Verify**: with SMTP/Twilio env vars set on Railway, use the admin test buttons first, then place one small live order (or local pickup) and confirm one email, correct recipient, and inventory/alert behavior at the threshold.
+
+Open decisions for the user: SMS on every new order or only stock alerts? Delete or wire the legacy `/api/process-payment` path? Include the duplicate guard in the same change?
 
 ## Known Issues / TODO
 - [x] Execute database update for product name change (COMPLETED)
@@ -169,8 +191,12 @@ subtotal, price, unit_price, tax_amount
 - [x] Discount on products + shipping, re-enable local pickup (COMPLETED 2025-09-26)
 - [x] Seasonal splash page (COMPLETED 2025-10-20)
 - [x] Remove hardcoded admin key; all admin routes require admin login (COMPLETED 2026-09-27)
-- [ ] **NEXT**: Wire notification-service into order completion and low-stock checks (email + SMS)
+- [ ] **NEXT**: Wire notification-service into order completion and low-stock checks (plan drafted in Notifications section; awaiting user decisions)
 - [ ] Add automated tests (none exist yet)
+
+## Pending Manual Checks
+- Log in as admin, open the Tax Tracker from the dashboard, run one sync (admin-login path of the 2026-09-27 security fix was not tested against the live database)
+- Done 2026-09-28: `/admin/database/users` returns 404 in production; Railway logs reviewed, no unauthorized access found
 
 ## Reopening Checklist (end of off-season)
 1. Set `SEASONAL_MODE=false` in Railway and redeploy
@@ -179,7 +205,7 @@ subtotal, price, unit_price, tax_amount
 4. Confirm product availability and inventory counts in the admin dashboard
 5. Decide whether automated order/low-stock notifications must ship before reopening
 
-## Current System Status (2026-09-27)
+## Current System Status (2026-09-28)
 **E-COMMERCE PLATFORM**: Feature complete; currently closed for the off-season behind the seasonal splash page (`SEASONAL_MODE`)
 - **Shipping**: Real-time USPS rates via OAuth API + fallback system
 - **Tax**: Arkansas 4.5% compliance with proper nexus management (includes shipping in taxable amount)
