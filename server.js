@@ -1846,55 +1846,8 @@ app.get('/debug/static', (req, res) => {
   });
 });
 
-// Admin endpoint to view database data (secure)
-app.get('/admin/database/:table', async (req, res) => {
-  // Simple authentication check
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
-  const { table } = req.params;
-  const validTables = ['users', 'orders', 'products', 'sub_products', 'subscriptions', 'coupons'];
-  
-  if (!validTables.includes(table)) {
-    return res.status(400).json({ error: 'Invalid table name' });
-  }
-  
-  const limit = req.query.limit ? parseInt(req.query.limit) : 50;
-  
-  try {
-    let query = `SELECT * FROM ${table} ORDER BY created_at DESC`;
-    if (limit && limit > 0) {
-      query += ` LIMIT ${limit}`;
-    }
-    
-    const result = await pool.query(query);
-    
-    res.json({
-      table: table,
-      count: result.rows.length,
-      data: result.rows,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error(`Error querying ${table}:`, err);
-    res.status(500).json({ error: 'Database query failed' });
-  }
-});
-
 // Admin endpoint for database stats
-app.get('/admin/stats', async (req, res) => {
-  // Simple authentication check
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
+app.get('/admin/stats', requireAdmin, async (req, res) => {
   try {
     const stats = {};
     const tables = ['users', 'orders', 'products', 'sub_products', 'subscriptions'];
@@ -1929,14 +1882,7 @@ app.get('/admin/stats', async (req, res) => {
 });
 
 // Admin endpoint to activate/deactivate coupons
-app.post('/admin/coupon/:code/:action', async (req, res) => {
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
+app.post('/admin/coupon/:code/:action', requireAdmin, async (req, res) => {
   const { code, action } = req.params;
   
   if (!['activate', 'deactivate'].includes(action)) {
@@ -1965,138 +1911,10 @@ app.post('/admin/coupon/:code/:action', async (req, res) => {
   }
 });
 
-// TEMPORARY: Admin endpoint to fix product name
-app.get('/admin/fix-tamarind', async (req, res) => {
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
+// TEMPORARY: Direct SMTP email test endpoint (bypasses NotificationService)
+app.post('/admin/test-email', requireAdmin, async (req, res) => {
   try {
-    // Force update the product using the same logic as initializeDatabase
-    const result = await pool.query(`
-      UPDATE products SET 
-        name = $1,
-        description = $2,
-        price = $3,
-        available = $4,
-        neo_flavor_profile = $5,
-        user_rating = $6,
-        inventory_count = $7
-      WHERE id = $8
-    `, [
-      'Tamarind_Sweets',
-      "This beloved Caribbean comfort food delivers the perfect harmony of sweet and tangy flavors. A treasured local dish known as 'Tamarind Stew'.",
-      6.99,
-      true,
-      4,
-      4,
-      15,
-      'fixed-tamarind-stew-id'
-    ]);
-    
-    res.json({ 
-      message: 'Product forcefully updated to Tamarind_Sweets',
-      updated_records: result.rowCount,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error('Error updating product name:', err);
-    res.status(500).json({ error: 'Database error', details: err.message });
-  }
-});
-
-// TEMPORARY: Simple diagnostic endpoint
-app.get('/admin/check-products', async (req, res) => {
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
-  try {
-    const result = await pool.query("SELECT id, name FROM products");
-    res.json({ 
-      success: true,
-      products: result.rows,
-      count: result.rows.length 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      error: error.message,
-      database_url_exists: !!process.env.DATABASE_URL
-    });
-  }
-});
-
-// TEMPORARY: Admin endpoint to update product name (remove after use)
-app.get('/admin/update-product-name', async (req, res) => {
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
-  try {
-    console.log('Starting product name update...');
-    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    
-    // First check current products
-    const currentResult = await pool.query("SELECT id, name FROM products");
-    console.log('Current products:', currentResult.rows);
-    
-    // Update the product name in the products table
-    const updateResult = await pool.query(
-      "UPDATE products SET name = $1 WHERE name = $2",
-      ['Tamarind_Sweets', 'Tamarind_Splice']
-    );
-    
-    console.log(`Updated ${updateResult.rowCount} product record(s)`);
-    
-    // Verify the update
-    const verifyResult = await pool.query(
-      "SELECT id, name FROM products WHERE id = 'fixed-tamarind-stew-id'"
-    );
-    
-    const result = {
-      success: true,
-      database_url_exists: !!process.env.DATABASE_URL,
-      current_products: currentResult.rows,
-      updated_records: updateResult.rowCount,
-      current_name: verifyResult.rows[0]?.name || 'Not found',
-      verification: verifyResult.rows[0] || null,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('✅ Product name update completed:', result);
-    res.json(result);
-    
-  } catch (error) {
-    console.error('❌ Error updating product name:', error);
-    res.status(500).json({ 
-      error: 'Update failed', 
-      details: error.message,
-      stack: error.stack,
-      database_url_exists: !!process.env.DATABASE_URL
-    });
-  }
-});
-
-// TEMPORARY: Admin key-based email test endpoint
-app.post('/admin/test-email', async (req, res) => {
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
-  try {
-    console.log('🧪 Starting admin key-based email test...');
+    console.log('🧪 Starting direct SMTP email test...');
     
     // Direct environment variable check
     console.log('📧 Direct env check - SMTP_EMAIL:', !!process.env.SMTP_EMAIL);
@@ -2129,15 +1947,15 @@ app.post('/admin/test-email', async (req, res) => {
     const mailOptions = {
       from: process.env.SMTP_EMAIL,
       to: adminEmail,
-      subject: '🧪 Admin Key Test Email - Rell\'s Kitchen',
+      subject: '🧪 Direct SMTP Test Email - Rell\'s Kitchen',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #00f5ff;">🏝️ Rell's Kitchen Admin Test</h2>
-          <p>This is a test email sent using the admin key endpoint.</p>
+          <p>This is a test email sent using the direct SMTP test endpoint.</p>
           <p><strong>Test Details:</strong></p>
           <ul>
             <li>Sent: ${new Date().toLocaleString()}</li>
-            <li>Method: Admin key authentication</li>
+            <li>Method: Admin login</li>
             <li>Status: ✅ Working</li>
             <li>From: ${process.env.SMTP_EMAIL}</li>
             <li>To: ${adminEmail}</li>
@@ -2152,7 +1970,7 @@ app.post('/admin/test-email', async (req, res) => {
     
     console.log('📧 Attempting to send email via Gmail SMTP...');
     const result = await transporter.sendMail(mailOptions);
-    console.log('✅ Admin key test email sent successfully:', result.messageId);
+    console.log('✅ Direct SMTP test email sent successfully:', result.messageId);
     
     res.json({ 
       success: true, 
@@ -2163,7 +1981,7 @@ app.post('/admin/test-email', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Admin key email test error:', error.message);
+    console.error('❌ Direct SMTP email test error:', error.message);
     console.error('❌ Full error:', error);
     
     // Provide specific error messages for common Gmail issues
@@ -2179,7 +1997,7 @@ app.post('/admin/test-email', async (req, res) => {
     }
     
     res.status(500).json({ 
-      error: 'Failed to send admin key test email', 
+      error: 'Failed to send direct SMTP test email', 
       details: errorMessage,
       code: error.code,
       responseCode: error.responseCode,
@@ -2193,15 +2011,8 @@ app.post('/admin/test-email', async (req, res) => {
   }
 });
 
-// TEMPORARY: Test main notification service with admin key
-app.post('/admin/test-notification-service', async (req, res) => {
-  const adminKey = req.query.key;
-  const validKey = 'rells-kitchen-admin-2025';
-  
-  if (adminKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  
+// TEMPORARY: Test main notification service
+app.post('/admin/test-notification-service', requireAdmin, async (req, res) => {
   try {
     console.log('🧪 Testing main NotificationService...');
     
@@ -2270,30 +2081,7 @@ app.get('/api/admin/inventory', requireAdmin, async (req, res) => {
 });
 
 // Tax reporting endpoint - fetches completed orders for ADAP reporting
-app.get('/api/admin/tax-report', async (req, res) => {
-  // Check for admin authentication via JWT or admin key
-  const adminKey = req.query.key || req.headers['x-admin-key'];
-  const token = req.cookies.token;
-  
-  // First check admin key
-  if (adminKey && adminKey === 'rells-kitchen-admin-2025') {
-    // Admin key is valid, proceed
-  } else if (token) {
-    // Try JWT authentication
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.userId]);
-      
-      if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
-        return res.status(403).json({ error: 'Admin privileges required' });
-      }
-    } catch (err) {
-      return res.status(401).json({ error: 'Invalid authentication' });
-    }
-  } else {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  
+app.get('/api/admin/tax-report', requireAdmin, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
@@ -2382,13 +2170,7 @@ app.get('/api/admin/tax-report', async (req, res) => {
 });
 
 // Test endpoint to debug database connectivity and order data
-app.get('/api/admin/test-orders', async (req, res) => {
-  const adminKey = req.query.key || req.headers['x-admin-key'];
-  
-  if (adminKey !== 'rells-kitchen-admin-2025') {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  
+app.get('/api/admin/test-orders', requireAdmin, async (req, res) => {
   try {
     // Test basic database connection
     const testQuery = await pool.query('SELECT 1 as test');

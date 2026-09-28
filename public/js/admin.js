@@ -437,17 +437,8 @@ Last Updated: ${new Date().toLocaleString()}`;
     }
 
     openTaxTracker() {
-        // Get the admin key from URL or use default
-        const urlParams = new URLSearchParams(window.location.search);
-        let adminKey = urlParams.get('key');
-        
-        // If no key in URL, use the default admin key
-        if (!adminKey) {
-            adminKey = 'rells-kitchen-admin-2025';
-        }
-        
-        // Open tax tracker with admin key
-        window.open(`/admin-tax-tracker.html?key=${adminKey}`, '_blank');
+        // Tax tracker authenticates with the same admin login cookie as this dashboard
+        window.open('/admin-tax-tracker.html', '_blank');
     }
 
     async exportOrders() {

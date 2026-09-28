@@ -14,6 +14,15 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
   - Updated `.gitignore` to prevent future leaks
   - Database credentials rotated in Railway
 
+### Admin Key Removal (2026-09-27) - RESOLVED ✅
+- **Issue**: A shared admin key was hardcoded in `server.js`, in this file, and in `public/js/admin.js` (served publicly to every visitor). The key unlocked `/admin/database/:table`, which returned full rows from `users` and `orders`.
+- **Resolution**:
+  - All admin routes now use the `requireAdmin` middleware (JWT cookie + `users.role = 'admin'`). There is no admin key anymore; `?key=` is ignored.
+  - Deleted `/admin/database/:table` and the one-off rename routes (`/admin/fix-tamarind`, `/admin/check-products`, `/admin/update-product-name`)
+  - Tax tracker uses the admin login cookie instead of a key
+  - Deleted unused `server-sqlite-backup.js`, `server-sqlite-backup2.js`, `admin-update-product.js`
+- **Follow-up (manual)**: The old key remains in git history; treat it as burned and never reuse it. Review Railway logs for past requests to `/admin/database`.
+
 ### Product Name Change (2025-08-01) - COMPLETED ✅
 - **Changed**: "Tamarind_Splice" → "Tamarind_Sweets"
 - **Files updated**: 6 files across frontend and backend
@@ -41,13 +50,13 @@ Caribbean-Cyberpunk fusion cuisine e-commerce website built with Node.js, Expres
 - **Main server**: `server.js`
 - **Database setup**: `postgresql-setup.js`
 - **Frontend**: `public/` directory
-- **Admin endpoints**: Secured with key `rells-kitchen-admin-2025`
+- **Admin endpoints**: Require logging in as a user with `role = 'admin'` (`requireAdmin` middleware in `server.js`)
 
 ## Development Notes
 - **Environment Variables**: Use `.env.example` as template
 - **Database Connection**: ALWAYS use Railway PostgreSQL via DATABASE_URL environment variable
 - **NO LOCAL DATABASE**: SQLite is deprecated. All development and testing must use Railway PostgreSQL
-- **Testing**: Admin endpoints available at `/admin/*` with proper key
+- **Testing**: Admin endpoints at `/admin/*` and `/api/admin/*` require an admin login session
 - **Git**: Main branch, commits include Claude attribution
 
 ### Database Schema Notes (CRITICAL for Future Development)
@@ -117,35 +126,33 @@ subtotal, price, unit_price, tax_amount
 - **Stock Threshold**: ✅ Configurable low-stock alerts with database persistence
 - **System Monitoring**: ✅ Database, API, and service health checks
 - **Data Export**: ✅ CSV order export functionality
-- **Security**: ✅ requireAdmin middleware for admin-only routes
+- **Security**: ✅ requireAdmin middleware on every admin route (no shared key)
 - **Database**: ✅ UPSERT operations ensure settings persist properly
 
 ### Tax Tracker Integration (2025-08-20) - FULLY OPERATIONAL ✅
 **STATUS**: Complete ADAP tax reporting system with database integration
 - **Admin Integration**: ✅ Tax Tracker button in admin dashboard opens in new tab
 - **Database Sync**: ✅ Auto-pulls Arkansas orders from production PostgreSQL database
-- **API Endpoint**: ✅ `/api/admin/tax-report` with admin key authentication
+- **API Endpoint**: ✅ `/api/admin/tax-report` with admin login authentication
 - **Data Calculation**: ✅ Reverse-engineers subtotal/tax from total_amount (no separate columns exist)
 - **Export Formats**: ✅ CSV, ADAP XML, Monthly Report for Arkansas Department of Finance
 - **Date Filtering**: ✅ Current month, last month, or custom date ranges
 - **Real Orders**: ✅ Successfully processes 5+ completed Arkansas orders
 - **CSP Compliance**: ✅ All JavaScript uses event listeners (no inline handlers)
 
-**NEXT STEPS** (if session disconnected):
-1. **Email Notifications**: Implement nodemailer for admin alerts
-   - Install: `npm install nodemailer`
-   - Add SMTP configuration (Gmail/SendGrid)
-   - Create email templates for new orders and low stock
-   - Integrate with order completion and inventory checks
-2. **SMS Notifications**: Implement Twilio for critical alerts
-   - Install: `npm install twilio`
-   - Add Twilio credentials to environment variables
-   - Create SMS templates for urgent notifications
-   - Add SMS triggers for out-of-stock and order failures
-3. **Real-time Notifications**: Add auto-trigger on order completion
-   - Hook into PayPal capture success
-   - Check inventory levels after each order
-   - Send notifications based on admin preferences
+### Discount and Local Pickup Update (2025-09-26) - COMPLETED ✅
+- Coupons and subscriber discounts now apply to products + shipping (not products only)
+- `LOCAL_PICKUP` shipping option re-enabled for all users, with pickup policy notice on the payment page
+
+### Seasonal Mode (2025-10-20) - ACTIVE FOR OFF-SEASON
+- `SEASONAL_MODE=true` serves `public/seasonal-splash.html` ("See You Next Summer") in place of the storefront
+- `/admin*`, `/api*`, `/login`, and `/register` stay reachable while seasonal mode is on
+- Middleware must stay before `express.static` in `server.js` or `index.html` is served instead
+
+### Notifications - PARTIALLY BUILT
+- `notification-service.js` (nodemailer + Twilio) exists, is initialized in `server.js`, and both packages are installed
+- Only the admin test endpoints call it (`/admin/test-notification-service`, `/api/admin/test-email`, SMS test)
+- **Remaining work**: trigger alerts automatically on PayPal capture success, new orders, and low stock, honoring the saved admin notification preferences
 
 ## Known Issues / TODO
 - [x] Execute database update for product name change (COMPLETED)
@@ -159,31 +166,32 @@ subtotal, price, unit_price, tax_amount
 - [x] Fix product display issue on live site (COMPLETED)
 - [x] Fix tax calculation to include shipping in taxable amount (COMPLETED)
 - [x] Integrate sales tax tracker with order management for ADAP reporting (COMPLETED)
-- [ ] **NEXT**: Implement email notifications for admin alerts
-- [ ] Implement SMS notifications for critical alerts
-- [ ] Add real-time notifications on order completion
+- [x] Discount on products + shipping, re-enable local pickup (COMPLETED 2025-09-26)
+- [x] Seasonal splash page (COMPLETED 2025-10-20)
+- [x] Remove hardcoded admin key; all admin routes require admin login (COMPLETED 2026-09-27)
+- [ ] **NEXT**: Wire notification-service into order completion and low-stock checks (email + SMS)
+- [ ] Add automated tests (none exist yet)
 
-## Current System Status (2025-08-20) ✅
-**E-COMMERCE PLATFORM**: Fully operational with complete payment processing
+## Reopening Checklist (end of off-season)
+1. Set `SEASONAL_MODE=false` in Railway and redeploy
+2. Verify USPS OAuth credentials still return live rates (`/api/calculate-shipping`)
+3. Verify PayPal credentials with a small live order and capture
+4. Confirm product availability and inventory counts in the admin dashboard
+5. Decide whether automated order/low-stock notifications must ship before reopening
+
+## Current System Status (2026-09-27)
+**E-COMMERCE PLATFORM**: Feature complete; currently closed for the off-season behind the seasonal splash page (`SEASONAL_MODE`)
 - **Shipping**: Real-time USPS rates via OAuth API + fallback system
 - **Tax**: Arkansas 4.5% compliance with proper nexus management (includes shipping in taxable amount)
 - **Payment**: PayPal redirect flow with itemized tax/shipping breakdown
 - **Database**: PostgreSQL on Railway (PRODUCTION ONLY - no local SQLite)
-- **Security**: JWT auth, rate limiting, environment variables
+- **Security**: JWT auth, role-based admin access, rate limiting, environment variables
 - **Performance**: USPS rate caching, optimized database queries
 - **Admin Tools**: Integrated tax tracker for ADAP reporting with auto-sync from database
 
 ## Commands
 - **Database Update**: `node update-product-name.js` (requires DATABASE_URL)
-- **Admin Access**: Add `?key=rells-kitchen-admin-2025` to admin endpoints
+- **Admin Access**: Log in with an admin account (`users.role = 'admin'`), then use `/admin` or call admin endpoints with that session cookie
 - **Tax Tracker**: Access via Admin Dashboard → System → Tax Tracker button
-- **Database Schema Check**: `GET /api/admin/test-orders?key=rells-kitchen-admin-2025`
-- **USPS Test**: `curl -X POST http://localhost:3001/api/calculate-shipping -H "Content-Type: application/json" -d '{"zipCode":"10001","productSize":"medium","quantity":2}'`
-
-## Memory
-
-### Project Memories
-- Added memory
-- Memory added
-- memorize
-- website current updates
+- **Database Schema Check**: `GET /api/admin/test-orders` (admin login required)
+- **USPS Test**: `curl -X POST http://localhost:3000/api/calculate-shipping -H "Content-Type: application/json" -d '{"zipCode":"10001","productSize":"medium","quantity":2}'`
